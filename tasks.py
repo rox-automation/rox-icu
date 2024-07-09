@@ -4,7 +4,13 @@ import os
 
 @task
 def install(ctx):
-    """install library files to the CircuitPython drive"""
+    """install dependencies"""
+    ctx.run("circup install -r cpy_requirements.txt")
+
+
+@task
+def sync(ctx):
+    """sync code with the board"""
     mount_point = None
     for root, dirs, files in os.walk("/media"):
         if "CIRCUITPY" in dirs:
@@ -16,9 +22,6 @@ def install(ctx):
         return
 
     print(f"CircuitPython drive found at {mount_point}")
-
-    # install circuitpython libraries
-    ctx.run("circup install -r cpy_requirements.txt")
 
     # Directory where the lib files will be copied
     destination = os.path.join(mount_point, "lib")

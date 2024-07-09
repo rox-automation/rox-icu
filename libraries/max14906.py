@@ -141,3 +141,61 @@ def write_register(reg: int, data_byte: int, chip_address: int = 0) -> bytearray
         )
 
     return data_in
+
+
+class Max14906:
+    """driver for MAX14906 chips on ROX-ECU board"""
+
+    def __init__(self, chip_address: int = 0):
+        self.chip_address = chip_address
+
+        if chip_address == 0:
+            self.d_pins = D_PINS[:4]
+            self.nfault = NFAULT_M1
+            self.nvddok = DigitalInOut(board.MAX1_NVDDOK)
+        elif chip_address == 1:
+            self.d_pins = D_PINS[4:]
+            self.nfault = NFAULT_M2
+            self.nvddok = DigitalInOut(board.MAX2_NVDDOK)
+        else:
+            raise ValueError(f"invalid chip address {chip_address}")
+
+        # check fault lines
+        assert not self.nfault.value, f"NFault line is high on chip {chip_address}"
+        assert not self.nvddok.value, f"NVDDOK line is high on chip {chip_address}"
+
+        self.get_global_error()  # clear the global error register
+
+        # set leds to internal operation
+        self.set_bit(REGISTERS.CONFIG1, 1, False)
+
+    def set_bit(self, reg: int, bit: int, value: bool) -> bytearray:
+        """set a single bit in a register"""
+        data = self.read_register(reg)[1]
+        data = data | (1 << bit) if value else data & ~(1 << bit)
+
+        return self.write_register(reg, data)
+
+    def read_register(self, reg: int) -> bytearray:
+        """single cycle read"""
+        return read_register(reg, self.chip_address)
+
+    def write_register(self, reg: int, data_byte: int) -> bytearray:
+        """single cycle write, write a single byte to a register, returns the data read back"""
+        return write_register(reg, data_byte, self.chip_address)
+
+    def get_global_error(self) -> int:
+        """get the global error register"""
+        return self.read_register(REGISTERS.GLOBAL_ERR)[1]
+
+    def print_registers(self) -> None:
+        """print all register values"""
+        global DEBUG
+
+        debug_bck = DEBUG
+        DEBUG = True
+
+        for name, reg in REGISTERS.get_registers():
+            self.read_register(reg)
+
+        DEBUG = debug_bck

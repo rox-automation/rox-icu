@@ -46,6 +46,7 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
     - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
     - put `.uf2` file on the drive, it should reboot into circuitpython.
 3. install required libaries on the board with `invoke install`
+4. sync code with the board `invoke sync`
 
 
 ### Runng code
