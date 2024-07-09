@@ -1,0 +1,41 @@
+{
+  "initializeCommand": "mkdir -p /var/tmp/container-extensions", // executed on HOST system
+
+
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USER_UID": "${localEnv:USER_UID}",
+      "USER_GID": "${localEnv:USER_GID}"
+    }
+  },
+  "runArgs": ["--network", "host", "--privileged"],
+
+  "mounts": [
+    "source=/var/tmp/container-extensions,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": ".devcontainer/init_container.sh",
+
+    // add workspace to pythonpath
+  "containerEnv": {
+      "PYTHONPATH": "${containerWorkspaceFolder}/src"
+    },
+
+
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "shardulm94.trailing-spaces",
+        "njpwerner.autodocstring",
+        "mhutchie.git-graph",
+        "doi.fileheadercomment",
+        "donjayamanne.githistory",
+        "charliermarsh.ruff"
+      ]
+    }
+  }
+}
