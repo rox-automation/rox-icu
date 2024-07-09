@@ -1,5 +1,5 @@
 """
-Demonstrate functionality of max14906 driver
+Toggle outputs
 
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
