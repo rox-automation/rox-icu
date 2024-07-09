@@ -24,12 +24,31 @@ ROX Integrated Control Unit (ICU) is a modern, open-source alternative to conven
 The ROX ICU is designed for decentralized control in mobile machinery and as a PLC replacement in challenging environments. It combines the accessibility of the Feather ecosystem with industrial-grade capabilities, offering a versatile solution for modern industrial control applications.
 
 
+
+
 ## What goes where
 
 
 * `lib` - board libraries
 * `pcb` - hardware documentation
 * `examples` - code examples
+
+
+## Getting started
+
+**note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
+
+
+### Setting up board
+
+1. install circuitpython
+    - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
+    - put `.uf2` file on the drive, it should reboot into circuitpython.
+2. install libraries (`circup install -r cpy_requirements.txt`)
+
+
+### Runng code
+
 
 
 ## License
