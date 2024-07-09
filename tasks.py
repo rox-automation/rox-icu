@@ -27,7 +27,7 @@ def install(ctx):
     os.makedirs(destination, exist_ok=True)
 
     # Copy files with rsync, following symlinks
-    ctx.run(f"rsync -avL lib/ {destination}/")
+    ctx.run(f"rsync -avL libraries/ {destination}/")
 
     # Flush buffers
     ctx.run("sync")

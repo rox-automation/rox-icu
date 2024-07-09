@@ -29,7 +29,7 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 ## What goes where
 
 
-* `lib` - board libraries
+* `libraries` - board libraries
 * `pcb` - hardware documentation
 * `examples` - code examples
 
