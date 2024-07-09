@@ -143,6 +143,35 @@ def write_register(reg: int, data_byte: int, chip_address: int = 0) -> bytearray
     return data_in
 
 
+def decode_global_err(register_value: int) -> list:
+    """
+    Decode the GlobalErr register value into human-readable errors.
+
+    Args:
+    register_value (int): The 8-bit value of the GlobalErr register.
+
+    Returns:
+    list of str: Descriptions of the active errors.
+    """
+    error_descriptions = {
+        7: "Watchdog Error: SPI or SYNCH watchdog timeout detected.",
+        6: "Loss of Ground: Loss of ground fault detected.",
+        5: "Thermal Shutdown: The device has entered thermal shutdown.",
+        4: "VDD Under-Voltage: VDD has fallen below the under-voltage lock-out threshold.",
+        3: "VDD Warning: VDD is below the warning threshold.",
+        2: "VDD Low: VDD is significantly below the nominal operating level.",
+        1: "V5 Under-Voltage: V5 has fallen below its under-voltage lock-out threshold.",
+        0: "Internal Supply Voltage Low: Internal supply voltage is below threshold.",
+    }
+    active_errors = []
+
+    for bit in range(8):  # Check each bit from 0 to 7
+        if register_value & (1 << bit):  # If the bit is set
+            active_errors.append(error_descriptions[bit])
+
+    return active_errors
+
+
 class Max14906:
     """driver for MAX14906 chips on ROX-ECU board"""
 
@@ -169,12 +198,30 @@ class Max14906:
         # set leds to internal operation
         self.set_bit(REGISTERS.CONFIG1, 1, False)
 
+        # write default values (partially)
+        self.write_register(REGISTERS.SET_OUT, 0x00)
+        self.write_register(REGISTERS.CONFIG_DO, 0x00)
+
     def set_bit(self, reg: int, bit: int, value: bool) -> bytearray:
         """set a single bit in a register"""
         data = self.read_register(reg)[1]
         data = data | (1 << bit) if value else data & ~(1 << bit)
 
         return self.write_register(reg, data)
+
+    def switch_to_output(self, d_pin_nr: int, value: bool) -> None:
+        """switch a D pin to output and set value"""
+        self.d_pins[d_pin_nr].switch_to_output(value)
+
+        # clear SetDi bit
+        self.set_bit(REGISTERS.SET_OUT, d_pin_nr + 4, False)
+
+    def switch_to_input(self, d_pin_nr: int) -> None:
+        """switch a D pin to input"""
+        self.d_pins[d_pin_nr].switch_to_input()
+
+        # set SetDi bit
+        self.set_bit(REGISTERS.SET_OUT, d_pin_nr + 4, True)
 
     def read_register(self, reg: int) -> bytearray:
         """single cycle read"""
