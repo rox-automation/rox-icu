@@ -50,7 +50,7 @@ async def cycle_neopixel():
     while True:
         for color in colors:
             px.fill(color)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
 
 
 async def main():
