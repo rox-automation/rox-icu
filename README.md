@@ -39,12 +39,13 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 **note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
 
 
-### Setting up board
+### Installation
 
-1. install circuitpython
+1. install dev tooling on the *host system* with `pip install -r requirements.txt`
+2. install circuitpython on the board
     - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
     - put `.uf2` file on the drive, it should reboot into circuitpython.
-2. install libraries (`circup install -r cpy_requirements.txt`)
+3. install required libaries on the board with `invoke install`
 
 
 ### Runng code

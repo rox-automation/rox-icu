@@ -17,6 +17,9 @@ def install(ctx):
 
     print(f"CircuitPython drive found at {mount_point}")
 
+    # install circuitpython libraries
+    ctx.run("circup install -r cpy_requirements.txt")
+
     # Directory where the lib files will be copied
     destination = os.path.join(mount_point, "lib")
 
