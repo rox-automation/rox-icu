@@ -1,0 +1,8 @@
+[tool.pyright]
+reportMissingModuleSource = false
+reportMissingImports = false
+
+[tool.mypy]
+ignore_missing_imports = true
+
+disable_error_code = ["attr-defined"]
