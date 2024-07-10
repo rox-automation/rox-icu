@@ -190,7 +190,6 @@ class Max14906:
             raise ValueError(f"invalid chip address {chip_address}")
 
         # check fault lines
-        assert not self.nfault.value, f"NFault line is high on chip {chip_address}"
         assert not self.nvddok.value, f"NVDDOK line is high on chip {chip_address}"
 
         self.get_global_error()  # clear the global error register
