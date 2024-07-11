@@ -20,7 +20,7 @@ def init_system() -> None:
 
     # set in- and outputs
     mx.write_register(mx.REGISTERS.SET_OUT, 0x80, 0)
-    mx.write_register(mx.REGISTERS.SET_OUT, 0x00, 1)
+    mx.write_register(mx.REGISTERS.SET_OUT, 0x10, 1)
 
     # read all max registers
     for chip_address in [0, 1]:
@@ -35,6 +35,9 @@ def init_system() -> None:
 
     # set button to input
     mx.input_to_d_pins["D8"].direction = Direction.INPUT
+
+    # inductive sensor
+    mx.input_to_d_pins["D1"].direction = Direction.INPUT
 
 
 async def flash_leds() -> None:
@@ -56,6 +59,19 @@ async def read_button() -> None:
             counter += 1
             print(f"Button pressed {counter} times")
             button_pressed.set()
+        prev_val = val
+        await asyncio.sleep(0.01)
+
+
+async def read_inductive_sensor() -> None:
+    prev_val = False
+    counter = 0
+
+    while True:
+        val = mx.input_to_d_pins["D1"].value
+        if val != prev_val and val:
+            counter += 1
+            print(f"Inductive sensor triggered {counter} times")
         prev_val = val
         await asyncio.sleep(0.01)
 
@@ -121,7 +137,13 @@ async def handle_outputs() -> None:
 
 
 async def main() -> None:
-    await asyncio.gather(flash_leds(), read_button(), handle_analog(), handle_outputs())
+    await asyncio.gather(
+        flash_leds(),
+        read_button(),
+        handle_analog(),
+        handle_outputs(),
+        read_inductive_sensor(),
+    )
 
 
 # ---------main code----------
