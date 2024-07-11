@@ -67,13 +67,16 @@ async def read_inductive_sensor() -> None:
     prev_val = False
     counter = 0
 
+    output = mx.input_to_d_pins["D5"]
+
     while True:
         val = mx.input_to_d_pins["D1"].value
+        output.value = val
         if val != prev_val and val:
             counter += 1
             print(f"Inductive sensor triggered {counter} times")
         prev_val = val
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0)
 
 
 async def handle_analog() -> None:
@@ -109,9 +112,8 @@ async def handle_analog() -> None:
 async def handle_outputs() -> None:
     """perform output actions"""
 
-    outputs = [mx.input_to_d_pins[name] for name in ["D5", "D6"]]
-    for p in outputs:
-        p.value = False
+    output = mx.input_to_d_pins["D6"]
+    output.value = False
 
     for chip_address in range(2):
         mx.read_register(mx.REGISTERS.GLOBAL_ERR, chip_address)
@@ -123,13 +125,12 @@ async def handle_outputs() -> None:
         print("Button pressed, toggling outputs")
         button_pressed.clear()
 
-        # flash outputs
+        # flash output
         for _ in range(10):
-            for p in outputs:
-                p.value = True
-                await asyncio.sleep(0.02)
-                p.value = False
-                await asyncio.sleep(0.02)
+            output.value = not output.value
+            await asyncio.sleep(0.1)
+
+        output.value = False
 
         relay.value = True
         await asyncio.sleep(1.0)
