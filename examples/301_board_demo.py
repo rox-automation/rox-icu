@@ -1,12 +1,19 @@
 # ECU board demo
+import struct
 import asyncio
 import analogio
+import canio
 from digitalio import DigitalInOut, Direction
+import neopixel
 import ecu_board as board
 import max14906 as mx
-import neopixel
+import can_utils
+
 
 button_pressed = asyncio.Event()
+
+nr_button_presses = 0
+nr_sensor_triggers = 0
 
 npx = neopixel.NeoPixel(board.NEOPIXEL, 1)
 
@@ -51,21 +58,23 @@ async def flash_leds() -> None:
 
 async def read_button() -> None:
     prev_val = False
-    counter = 0
+
+    global nr_button_presses
 
     while True:
         val = mx.input_to_d_pins["D8"].value
         if val != prev_val and val:
-            counter += 1
-            print(f"Button pressed {counter} times")
+            nr_button_presses += 1
+            print(f"Button pressed {nr_button_presses} times")
             button_pressed.set()
         prev_val = val
         await asyncio.sleep(0.01)
 
 
 async def read_inductive_sensor() -> None:
+    global nr_sensor_triggers
+
     prev_val = False
-    counter = 0
 
     output = mx.input_to_d_pins["D5"]
 
@@ -73,8 +82,8 @@ async def read_inductive_sensor() -> None:
         val = mx.input_to_d_pins["D1"].value
         output.value = val
         if val != prev_val and val:
-            counter += 1
-            print(f"Inductive sensor triggered {counter} times")
+            nr_sensor_triggers += 1
+            print(f"Inductive sensor triggered {nr_sensor_triggers} times")
         prev_val = val
         await asyncio.sleep(0)
 
@@ -137,6 +146,28 @@ async def handle_outputs() -> None:
         relay.value = False
 
 
+async def send_can_messages() -> None:
+    """send counter and number of button presses and sensor triggers over CAN"""
+
+    bus = can_utils.can_init()
+
+    counter = 0
+
+    while True:
+        message = canio.Message(
+            id=0x01,
+            data=struct.pack(
+                "<BBB",
+                counter & 0xFF,
+                nr_button_presses & 0xFF,
+                nr_sensor_triggers & 0xFF,
+            ),
+        )
+        bus.send(message)
+        counter += 1
+        await asyncio.sleep(0.01)
+
+
 async def main() -> None:
     await asyncio.gather(
         flash_leds(),
@@ -144,6 +175,7 @@ async def main() -> None:
         handle_analog(),
         handle_outputs(),
         read_inductive_sensor(),
+        send_can_messages(),
     )
 
 
