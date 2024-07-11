@@ -165,7 +165,7 @@ async def send_can_messages() -> None:
         )
         bus.send(message)
         counter += 1
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0)
 
 
 async def main() -> None:
