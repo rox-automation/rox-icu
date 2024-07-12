@@ -56,4 +56,4 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 ## Licenses
 
 * The sourcecode is released under the [MIT License](LICENSE)
-* Hardware design in `pcb` folder is released under [CC BY-SA 4.0](pcb/license.txt) license.
+* Hardware design in `pcb` folder is released under [CC BY-SA 3.0](pcb/license.txt) license.
