@@ -41,7 +41,7 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 
 ### Installation
 
-1. install dev tooling on the *host system* with `pip install -r requirements.txt`
+1. install dev tooling on the *host system* with `pip install -r requirements.txt` or create virtual invironment with `prepare_host.sh`
 2. install circuitpython on the board
     - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
     - put `.uf2` file on the drive, it should reboot into circuitpython.
@@ -50,6 +50,13 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 
 
 ### Runng code
+
+First determine device serial port with `sudo dmesg | grep tty`
+
+There use `ampy` or `mpremote`:
+
+*  `ampy run <script.py>` (set `AMPY_PORT` env variable first)
+*  `mpremote <port> run <script.py>` (use shortcuts for <port>, like `a1` for `/dev/ttyACM1` if required)
 
 
 
