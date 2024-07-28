@@ -9,14 +9,25 @@ parse: 0.174 ms
 """
 
 import time
+import gc
 
 import can_protocol as protocol
 
 node_id = 10
 iterations = 1000
 
-# --------pack--------
 
+# --------nop---------
+gc.collect()
+t_start = time.monotonic_ns()
+for _ in range(iterations):
+    pass
+t_elapsed = (time.monotonic_ns() - t_start) / 1e6
+t_nop = t_elapsed / iterations
+print(f"nop: {t_nop:.3f} ms")
+
+# --------pack--------
+gc.collect()
 t_start = time.monotonic_ns()
 for _ in range(iterations):
     msg = protocol.HeartbeatMessage(node_id, 1, 2, 3, 7)
@@ -28,6 +39,7 @@ t_pack = t_elapsed / iterations
 print(f"pack: {t_pack:.3f} ms")
 
 # --------parse--------
+gc.collect()
 msg = protocol.HeartbeatMessage(node_id, 1, 2, 3, 7)
 msg_id = protocol.generate_message_id(msg.opcode, node_id)
 
