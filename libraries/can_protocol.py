@@ -49,6 +49,10 @@ Use '<' for little-endian or '>' for big-endian byte order as required.
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
+# TODO: update docstring
+
+from typing import NamedTuple
+from collections import namedtuple
 import struct
 
 
@@ -64,45 +68,23 @@ def split_message_id(message_id: int) -> tuple[int, int]:
     return opcode, node_id
 
 
-class HeartbeatMessage:
-    """Heartbeat message class."""
+# opcode 0
+HeartbeatMessage = namedtuple(
+    "HeartbeatMessage", "error_code error_count uptime version"
+)
 
-    __slots__ = ("node_id", "error_code", "error_count", "uptime", "version")
-    byte_def = "<BHIB"
-    opcode = 1
+# opcode 1
+IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-    def __init__(
-        self, node_id: int, error_code: int, error_count: int, uptime: int, version: int
-    ):
-        self.node_id = node_id
-        self.error_code = error_code
-        self.error_count = error_count
-        self.uptime = uptime
-        self.version = version
+# (message, byte_def) opcode is index in tuple for easy lookup
+MESSAGES = ((HeartbeatMessage, "<BHIB"), (IOStateMessage, "<B"))
 
-    def pack(self) -> tuple[int, bytes]:
-        """Returns a tuple containing the message ID and packed data."""
-        message_id = generate_message_id(self.opcode, self.node_id)
-        data = struct.pack(
-            self.byte_def, self.error_code, self.error_count, self.uptime, self.version
-        )
-        return message_id, data
-
-    @classmethod
-    def from_data(cls, node_id: int, data: bytes) -> "HeartbeatMessage":
-        """Deserialize the message from bytes."""
-        fields = struct.unpack(HeartbeatMessage.byte_def, data)
-        return cls(node_id, *fields)
+# for packing just use
+# struct.pack(byte_def, *msg)
 
 
-# Define opcode-to-message mapping
-MESSAGES = {HeartbeatMessage.opcode: HeartbeatMessage}
-
-
-def parse(message_id: int, data: bytes) -> HeartbeatMessage:
+def parse(opcode: int, data: bytes) -> NamedTuple:
     """Parse a message from message ID and data bytes."""
-    opcode, node_id = split_message_id(message_id)
-    message_cls = MESSAGES.get(opcode)
-    if message_cls:
-        return message_cls.from_data(node_id, data)
-    raise ValueError(f"Unknown message opcode: {opcode}")
+
+    message_cls, byte_def = MESSAGES[opcode]
+    return message_cls(*struct.unpack(byte_def, data))
