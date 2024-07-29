@@ -11,7 +11,7 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-import ecu_board as board
+
 from digitalio import DigitalInOut
 import neopixel
 

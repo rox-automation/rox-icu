@@ -1,7 +1,7 @@
 # driver for max chips on ROX-ECU board
 from digitalio import DigitalInOut, Direction
 import busio
-import ecu_board as board
+import libraries.icu_board as board
 
 DEBUG = False  # set to True  for verbose output
 
