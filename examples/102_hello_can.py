@@ -1,19 +1,14 @@
-"""demonstrate can usage basics on Feather M4 CAN"""
-
-
-# SPDX-FileCopyrightText: 2020 Jeff Epler for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
+"""demonstrate can usage basics on ROX ICU board"""
 
 import struct
 import time
 
 import canio
-import can_utils
+from icu_board import can, led1
 
 
-can = can_utils.can_init()
 listener = can.listen(matches=[canio.Match(0x123)], timeout=0.1)
+
 
 old_bus_state = None
 counter = 0
@@ -34,5 +29,7 @@ while True:
     message = canio.Message(id=0x124, data=struct.pack("<I", counter))
     print(f"> {message.data.hex(" ")}")
     can.send(message)
+
+    led1.value = not led1.value
 
     time.sleep(1.0)

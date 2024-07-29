@@ -41,7 +41,9 @@ x board.NEOPIXEL_POWER (PB03)
 
 from microcontroller import pin
 from digitalio import DigitalInOut
+
 import neopixel
+import canio
 
 
 class Pins:
@@ -60,6 +62,11 @@ class Pins:
 
     # enable 5V
     BOOST_ENABLE = pin.PB13
+
+    # can
+    CAN_STANDBY = pin.PB12
+    CAN_TX = pin.PB14
+    CAN_RX = pin.PB15
 
     # spi
     SCK = pin.PA17
@@ -98,11 +105,21 @@ led2 = DigitalInOut(Pins.LED2)
 led2.switch_to_output()
 
 rgb_led = neopixel.NeoPixel(Pins.NEOPIXEL, 1)
+# set dim green on module import
+rgb_led.brightness = 0.01
+rgb_led.fill((0, 255, 0))
 
 # 5V supply, enable by default
 boost_enable = DigitalInOut(Pins.BOOST_ENABLE)
 boost_enable.switch_to_output()
 boost_enable.value = True
+
+# can interface
+_can_standby = DigitalInOut(Pins.CAN_STANDBY)
+_can_standby.switch_to_output(False)
+
+can = canio.CAN(rx=Pins.CAN_RX, tx=Pins.CAN_TX, baudrate=500_000, auto_restart=True)
+
 
 # interface pins
 # D_PINS = [
