@@ -15,9 +15,15 @@ def test_heartbeat() -> None:
     byte_def = protocol.MESSAGES[opcode][1]
     data_bytes = struct.pack(byte_def, *msg)
 
+    assert protocol.pack(opcode, msg) == data_bytes
+
     assert data_bytes == test_bytes
 
     # # convert back
     msg2 = protocol.parse(opcode, test_bytes)
 
     assert msg == msg2
+
+
+def test_opcode() -> None:
+    assert protocol.get_opcode(protocol.HeartbeatMessage) == 0

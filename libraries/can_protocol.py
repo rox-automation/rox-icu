@@ -55,6 +55,8 @@ from typing import NamedTuple
 from collections import namedtuple
 import struct
 
+VERSION = 3
+
 
 def generate_message_id(opcode: int, node_id: int) -> int:
     """Generates an 11-bit message ID from opcode and node ID."""
@@ -79,8 +81,22 @@ IOStateMessage = namedtuple("IOStateMessage", "io_state")
 # (message, byte_def) opcode is index in tuple for easy lookup
 MESSAGES = ((HeartbeatMessage, "<BHIB"), (IOStateMessage, "<B"))
 
-# for packing just use
-# struct.pack(byte_def, *msg)
+
+def get_opcode(cls: NamedTuple) -> int:
+    """Get the opcode for a message type."""
+    for opcode, (msg_cls, _) in enumerate(MESSAGES):
+        if cls == msg_cls:
+            return opcode
+    raise ValueError("Unknown message type")
+
+
+def pack(opcode: int, msg: NamedTuple) -> bytes:
+    """
+    pack message data into bytes
+    for more efficient code packing just use
+    struct.pack(byte_def, *msg)"""
+    byte_def = MESSAGES[opcode][1]
+    return struct.pack(byte_def, *msg)
 
 
 def parse(opcode: int, data: bytes) -> NamedTuple:
