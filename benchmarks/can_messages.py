@@ -57,7 +57,7 @@ msg_id = protocol.generate_message_id(opcode, node_id)
 
 t_start = time.monotonic_ns()
 for _ in range(iterations):
-    msg2 = protocol.parse(opcode, b"\x01\x02\x00\x03\x00\x00\x00\x07")
+    msg2 = protocol.unpack(opcode, b"\x01\x02\x00\x03\x00\x00\x00\x07")
 
 t_end = time.monotonic_ns()
 t_elapsed = (t_end - t_start) / 1e6

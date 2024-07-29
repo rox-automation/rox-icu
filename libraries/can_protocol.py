@@ -115,7 +115,7 @@ def pack(opcode: int, msg: NamedTuple) -> bytes:
     return struct.pack(byte_def, *msg)
 
 
-def parse(opcode: int, data: bytes) -> NamedTuple:
+def unpack(opcode: int, data: bytes) -> NamedTuple:
     """Parse a message from message ID and data bytes."""
 
     message_cls, byte_def = MESSAGES[opcode]

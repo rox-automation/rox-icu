@@ -20,7 +20,7 @@ def test_heartbeat() -> None:
     assert data_bytes == test_bytes
 
     # # convert back
-    msg2 = protocol.parse(opcode, test_bytes)
+    msg2 = protocol.unpack(opcode, test_bytes)
 
     assert msg == msg2
 
