@@ -45,7 +45,7 @@ from digitalio import DigitalInOut
 import neopixel
 import canio
 import busio
-import max14906 as mx
+import max14906 as maxio
 
 
 class Pins:
@@ -166,14 +166,14 @@ _dpins = [
     DigitalInOut(pin)
     for pin in [Pins.MAX1_D1, Pins.MAX1_D2, Pins.MAX1_D3, Pins.MAX1_D4]
 ]
-max1 = mx.Max14906(spi, max_cs, _dpins, chip_address=0)
+max1 = maxio.Max14906(spi, max_cs, _dpins, chip_address=0)
 del _dpins
 
 _dpins = [
     DigitalInOut(pin)
     for pin in [Pins.MAX2_D1, Pins.MAX2_D2, Pins.MAX2_D3, Pins.MAX2_D4]
 ]
-max2 = mx.Max14906(spi, max_cs, _dpins, chip_address=1)
+max2 = maxio.Max14906(spi, max_cs, _dpins, chip_address=1)
 del _dpins
 
 # interface pins

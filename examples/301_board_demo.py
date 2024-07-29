@@ -6,7 +6,7 @@ import canio
 from digitalio import DigitalInOut, Direction
 import neopixel
 import ecu_board as board
-import max14906 as mx
+import max14906 as maxio
 import can_utils
 
 
@@ -19,32 +19,32 @@ npx = neopixel.NeoPixel(board.NEOPIXEL, 1)
 
 
 def init_system() -> None:
-    mx.ENABLE.value = False
-    mx.DEBUG = True
+    maxio.ENABLE.value = False
+    maxio.DEBUG = True
 
     npx.brightness = 0.1
     npx.fill((0, 0, 255))
 
     # set in- and outputs
-    mx.write_register(mx.REGISTERS.SET_OUT, 0x80, 0)
-    mx.write_register(mx.REGISTERS.SET_OUT, 0x10, 1)
+    maxio.write_register(maxio.REGISTERS.SET_OUT, 0x80, 0)
+    maxio.write_register(maxio.REGISTERS.SET_OUT, 0x10, 1)
 
     # read all max registers
     for chip_address in [0, 1]:
         print(f"-------reading register chip {chip_address}")
-        for reg in mx.REGISTERS.get_registers():
-            mx.read_register(reg[1], chip_address)
+        for reg in maxio.REGISTERS.get_registers():
+            maxio.read_register(reg[1], chip_address)
 
     print(48 * "-")
 
     # turn max on
-    mx.ENABLE.value = True
+    maxio.ENABLE.value = True
 
     # set button to input
-    mx.input_to_d_pins["D8"].direction = Direction.INPUT
+    maxio.input_to_d_pins["D8"].direction = Direction.INPUT
 
     # inductive sensor
-    mx.input_to_d_pins["D1"].direction = Direction.INPUT
+    maxio.input_to_d_pins["D1"].direction = Direction.INPUT
 
 
 async def flash_leds() -> None:
@@ -62,7 +62,7 @@ async def read_button() -> None:
     global nr_button_presses
 
     while True:
-        val = mx.input_to_d_pins["D8"].value
+        val = maxio.input_to_d_pins["D8"].value
         if val != prev_val and val:
             nr_button_presses += 1
             print(f"Button pressed {nr_button_presses} times")
@@ -76,10 +76,10 @@ async def read_inductive_sensor() -> None:
 
     prev_val = False
 
-    output = mx.input_to_d_pins["D5"]
+    output = maxio.input_to_d_pins["D5"]
 
     while True:
-        val = mx.input_to_d_pins["D1"].value
+        val = maxio.input_to_d_pins["D1"].value
         output.value = val
         if val != prev_val and val:
             nr_sensor_triggers += 1
@@ -121,13 +121,13 @@ async def handle_analog() -> None:
 async def handle_outputs() -> None:
     """perform output actions"""
 
-    output = mx.input_to_d_pins["D6"]
+    output = maxio.input_to_d_pins["D6"]
     output.value = False
 
     for chip_address in range(2):
-        mx.read_register(mx.REGISTERS.GLOBAL_ERR, chip_address)
+        maxio.read_register(maxio.REGISTERS.GLOBAL_ERR, chip_address)
 
-    relay = mx.input_to_d_pins["D7"]
+    relay = maxio.input_to_d_pins["D7"]
 
     while True:
         await button_pressed.wait()

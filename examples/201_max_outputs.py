@@ -5,10 +5,10 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import time
-from icu_board import mx, max1, max2, max_enable
+from icu_board import maxio, max1, max2, max_enable
 
 
-mx.DEBUG = True  # print debug info
+maxio.DEBUG = True  # print debug info
 max_enable.value = True  # enable in- and outputs
 
 for drv in [max1, max2]:
