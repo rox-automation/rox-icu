@@ -8,6 +8,12 @@ reuslts (Feater M4):
 pack: 0.198 ms
 parse: 0.174 ms
 
+---- after refactor to namedtuple ----
+nop: 0.005 ms
+pack: 0.081 ms
+parse: 0.097 ms
+parse-direct: 0.079 ms
+
 
 """
 

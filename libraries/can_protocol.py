@@ -1,35 +1,41 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Simple CAN protocol for ROX devices.
 
-This module is designed to be usable in both CPython and MicroPython, catering to low-resource environments such as embedded systems.
+This module provides a lightweight implementation of a CAN protocol designed for ROX devices.
+It is compatible with both CPython and MicroPython, making it suitable for use in
+low-resource environments such as embedded systems.
 
-Protocol definition
-=====================
+Protocol Definition
+===================
 
-Message ID : 11 bits, contains opcode and node ID.
+Message ID: 11 bits, containing opcode and node ID.
 * bits 10-7: opcode (0-15) - operation code
 * bits 6-0: node ID (0-127) - node identifier
 
 Node 0 is reserved for broadcast messages and CANopen NMT messages.
 
-How Messages Work
+Message Structure
 =================
 
-1. Messages are defined as standalone classes with their data attributes and methods for packing and unpacking binary data.
-2. The `byte_def` attribute in each message class defines the binary structure using struct format characters.
-3. The `opcode` class attribute uniquely identifies each message type.
-4. Messages are packed into bytes using the `pack` method, which returns both the message ID and the serialized data.
-5. Messages are unpacked from bytes using the `from_data` class method.
+Messages are defined using namedtuples, providing a simple and memory-efficient
+structure for handling data. Each message type has an associated opcode and
+byte definition for serialization.
+
+Key Components:
+1. Message definitions (HeartbeatMessage, IOStateMessage)
+2. MESSAGES tuple containing message classes and their byte definitions
+3. Utility functions for message ID generation and parsing
+4. Functions for packing and unparsing messages
 
 Adding New Messages
 ===================
 
 To add a new message type:
-1. Define a new class directly handling its data and serialization.
-2. Set the `byte_def` attribute with struct format characters in the class.
-3. Assign a unique `opcode` as a class attribute.
-4. Register the new message class in the `MESSAGES` dictionary to facilitate parsing.
+1. Define a new namedtuple with the required fields
+2. Add the new message type to the MESSAGES tuple with its byte definition
+3. The opcode for the new message will be its index in the MESSAGES tuple
 
 Struct Types Summary
 ====================
@@ -46,12 +52,22 @@ The `struct` module is used for packing and unpacking binary data. Common format
 
 Use '<' for little-endian or '>' for big-endian byte order as required.
 
+Type Hinting
+============
+
+This module uses type hinting for improved code clarity and error detection.
+However, to maintain compatibility with MicroPython, which may not support the
+`typing` module, type hints are implemented using a try-except block to import
+the necessary types.
+
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
-# TODO: update docstring
+try:
+    from typing import NamedTuple
+except ImportError:
+    pass
 
-from typing import NamedTuple
 from collections import namedtuple
 import struct
 
