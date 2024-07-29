@@ -3,11 +3,14 @@ import struct
 import asyncio
 import analogio
 import canio
+import gc
 from digitalio import DigitalInOut, Direction
-import neopixel
-import ecu_board as board
-import max14906 as maxio
-import can_utils
+
+
+from icu_board import Pins, rgb_led, led1, led2, maxio, max1, max2, max_enable, can
+
+
+maxio.DEBUG = False  # print debug info
 
 
 button_pressed = asyncio.Event()
@@ -15,44 +18,37 @@ button_pressed = asyncio.Event()
 nr_button_presses = 0
 nr_sensor_triggers = 0
 
-npx = neopixel.NeoPixel(board.NEOPIXEL, 1)
-
 
 def init_system() -> None:
-    maxio.ENABLE.value = False
     maxio.DEBUG = True
 
-    npx.brightness = 0.1
-    npx.fill((0, 0, 255))
+    rgb_led.brightness = 0.1
+    rgb_led.fill((0, 0, 255))
 
     # set in- and outputs
-    maxio.write_register(maxio.REGISTERS.SET_OUT, 0x80, 0)
-    maxio.write_register(maxio.REGISTERS.SET_OUT, 0x10, 1)
+    max1.switch_to_input(3)
+    assert max1.read_register(maxio.REGISTERS.SET_OUT)[1] == 0x80
+
+    max2.switch_to_input(0)
+    assert max2.read_register(maxio.REGISTERS.SET_OUT)[1] == 0x10
+
+    # maxio.write_register(maxio.REGISTERS.SET_OUT, 0x80, 0)
+    # maxio.write_register(maxio.REGISTERS.SET_OUT, 0x10, 1)
 
     # read all max registers
-    for chip_address in [0, 1]:
-        print(f"-------reading register chip {chip_address}")
-        for reg in maxio.REGISTERS.get_registers():
-            maxio.read_register(reg[1], chip_address)
+    for drv in [max1, max2]:
+        print("chip address:", drv.chip_address)
+        drv.print_registers()
 
     print(48 * "-")
 
     # turn max on
-    maxio.ENABLE.value = True
-
-    # set button to input
-    maxio.input_to_d_pins["D8"].direction = Direction.INPUT
-
-    # inductive sensor
-    maxio.input_to_d_pins["D1"].direction = Direction.INPUT
+    max_enable.value = True  # enable in- and outputs
 
 
 async def flash_leds() -> None:
-    led = DigitalInOut(board.LED1)
-    led.direction = Direction.OUTPUT
-
     while True:
-        led.value = not led.value
+        led1.value = not led1.value
         await asyncio.sleep(0.2)
 
 
@@ -62,7 +58,7 @@ async def read_button() -> None:
     global nr_button_presses
 
     while True:
-        val = maxio.input_to_d_pins["D8"].value
+        val = max1.d_pins[3].value
         if val != prev_val and val:
             nr_button_presses += 1
             print(f"Button pressed {nr_button_presses} times")
@@ -76,10 +72,10 @@ async def read_inductive_sensor() -> None:
 
     prev_val = False
 
-    output = maxio.input_to_d_pins["D5"]
+    output = max1.d_pins[0]
 
     while True:
-        val = maxio.input_to_d_pins["D1"].value
+        val = max2.d_pins[0].value
         output.value = val
         if val != prev_val and val:
             nr_sensor_triggers += 1
@@ -91,11 +87,8 @@ async def read_inductive_sensor() -> None:
 async def handle_analog() -> None:
     """read analog inputs and set nepixel colors"""
 
-    AIN1 = analogio.AnalogIn(board.A0)
-    AIN2 = analogio.AnalogIn(board.A1)
-
-    led = DigitalInOut(board.LED2)
-    led.direction = Direction.OUTPUT
+    AIN1 = analogio.AnalogIn(Pins.A0)
+    AIN2 = analogio.AnalogIn(Pins.A1)
 
     c_offset = 700
     c_range = 47915 - c_offset
@@ -111,23 +104,20 @@ async def handle_analog() -> None:
 
             rgb[idx] = int(pct * 2.55)
 
-        npx.fill((rgb[0], 0, rgb[1]))
+        rgb_led.fill((rgb[0], 0, rgb[1]))
         counter += 1
         if counter % 10 == 0:
-            led.value = not led.value
+            led2.value = not led2.value
         await asyncio.sleep(0)
 
 
 async def handle_outputs() -> None:
     """perform output actions"""
 
-    output = maxio.input_to_d_pins["D6"]
+    output = max1.d_pins[1]  # attached led
     output.value = False
 
-    for chip_address in range(2):
-        maxio.read_register(maxio.REGISTERS.GLOBAL_ERR, chip_address)
-
-    relay = maxio.input_to_d_pins["D7"]
+    relay = max1.d_pins[2]
 
     while True:
         await button_pressed.wait()
@@ -149,8 +139,6 @@ async def handle_outputs() -> None:
 async def send_can_messages() -> None:
     """send counter and number of button presses and sensor triggers over CAN"""
 
-    bus = can_utils.can_init()
-
     counter = 0
 
     while True:
@@ -163,8 +151,9 @@ async def send_can_messages() -> None:
                 nr_sensor_triggers & 0xFF,
             ),
         )
-        bus.send(message)
+        can.send(message)
         counter += 1
+        gc.collect()
         await asyncio.sleep(0)
 
 
