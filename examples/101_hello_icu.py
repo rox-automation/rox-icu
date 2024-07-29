@@ -11,16 +11,12 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-import ecu_board as board
-from digitalio import DigitalInOut
-import neopixel
+
+from icu_board import rgb_led, led1, led2
 
 
-async def flash_led(pin, interval=0.5):
+async def flash_led(led, interval=0.5):
     """flash the LED at the given interval"""
-    print(f"flashing LED at {pin} with interval {interval}")
-    led = DigitalInOut(pin)
-    led.switch_to_output()
 
     while True:
         led.value = not led.value
@@ -30,8 +26,6 @@ async def flash_led(pin, interval=0.5):
 async def cycle_neopixel():
     """cycle through the RGB colors on the Neopixel"""
     print("cycling through the RGB colors on the Neopixel")
-
-    board.switch_5V(True)
 
     colors = [
         (255, 0, 0),
@@ -44,20 +38,19 @@ async def cycle_neopixel():
         (0, 0, 0),
     ]
 
-    px = neopixel.NeoPixel(board.NEOPIXEL, 1)
-    px.brightness = 0.3
+    rgb_led.brightness = 0.3
 
     while True:
         for color in colors:
-            px.fill(color)
+            rgb_led.fill(color)
             await asyncio.sleep(0.3)
 
 
 async def main():
     """main coro"""
     await asyncio.gather(
-        flash_led(board.LED1),  # flash led1 with default frequency
-        flash_led(board.LED2, 0.1),  # flash led2 faster
+        flash_led(led1),  # flash led1 with default frequency
+        flash_led(led2, 0.4),  # flash led2 faster
         cycle_neopixel(),  # cycle through the RGB colors
     )
 

@@ -1,58 +1,17 @@
 # driver for max chips on ROX-ECU board
-from digitalio import DigitalInOut, Direction
+from digitalio import DigitalInOut
 import busio
-import ecu_board as board
 
 DEBUG = False  # set to True  for verbose output
 
 
-SPI = busio.SPI(board.SCK, board.MOSI, board.MISO)
-while not SPI.try_lock():
-    pass
-
-print("spi locked")
-SPI.configure(baudrate=500_000, phase=0, polarity=0)
-
-# other pins
-
-CS = DigitalInOut(board.MAX_CS)  # toggle to start a new transaction
-CS.direction = Direction.OUTPUT
-CS.value = True
-
-SYNCH = DigitalInOut(board.MAX_SYNCH)
-SYNCH.direction = Direction.OUTPUT
-SYNCH.value = True
-
-NREADY = DigitalInOut(board.MAX_NREADY)
-NREADY.direction = Direction.INPUT
-print(f"NREADY: {NREADY.value}")
-
-CRC_ENABLE = DigitalInOut(board.MAX_CRCEN)
-CRC_ENABLE.direction = Direction.OUTPUT
-CRC_ENABLE.value = False
-print(f"CRC_ENABLE: {CRC_ENABLE.value}")
-
-
-ENABLE = DigitalInOut(board.MAX_ENABLE)
-ENABLE.direction = Direction.OUTPUT
-ENABLE.value = False
-
-NFAULT_M1 = DigitalInOut(board.MAX1_NFAULT)
-NFAULT_M1.direction = Direction.INPUT
-print(f"NFAULT_M1: {NFAULT_M1.value}")
-
-NFAULT_M2 = DigitalInOut(board.MAX2_NFAULT)
-NFAULT_M2.direction = Direction.INPUT
-print(f"NFAULT_M2: {NFAULT_M2.value}")
-
-
 # d-pins
-D_PINS = [DigitalInOut(pin) for pin in board.D_PINS]
-for p in D_PINS:
-    p.switch_to_output(False)
+# D_PINS = [DigitalInOut(pin) for pin in board.D_PINS]
+# for p in D_PINS:
+#     p.switch_to_output(False)
 
 # map d-pins to names on the board
-input_to_d_pins = dict(zip(["D5", "D6", "D7", "D8", "D1", "D2", "D3", "D4"], D_PINS))
+# input_to_d_pins = dict(zip(["D5", "D6", "D7", "D8", "D1", "D2", "D3", "D4"], D_PINS))
 
 
 # ----------------- Max registers
@@ -102,47 +61,6 @@ class REGISTERS:
         return value
 
 
-def read_register(
-    reg: int,
-    chip_address: int = 0,
-) -> bytearray:
-    """single cycle read"""
-    mosi_byte = (chip_address << 6) | (reg << 1) & 0xFE
-
-    data_out = bytes([mosi_byte, 0x00])
-    data_in = bytearray(2)
-
-    CS.value = False
-    SPI.write_readinto(data_out, data_in)
-    CS.value = True
-
-    if DEBUG:
-        print(
-            f"read [{reg:02X}]({REGISTERS.get_name(reg)}) > {data_out.hex(' ')} , < {data_in.hex(' ')} ({data_in[1]:08b})"
-        )
-
-    return data_in
-
-
-def write_register(reg: int, data_byte: int, chip_address: int = 0) -> bytearray:
-    """single cycle write, write a single byte to a register, returns the data read back"""
-    mosi_byte = (chip_address << 6) | (reg << 1) | 0x1
-
-    data_out = bytes([mosi_byte, data_byte])
-    data_in = bytearray(2)
-
-    CS.value = False
-    SPI.write_readinto(data_out, data_in)
-    CS.value = True
-
-    if DEBUG:
-        print(
-            f"write [{reg:02X}]({REGISTERS.get_name(reg)}) {data_out.hex(' ')} , < {data_in.hex(' ')}"
-        )
-
-    return data_in
-
-
 def decode_global_err(register_value: int) -> list:
     """
     Decode the GlobalErr register value into human-readable errors.
@@ -175,22 +93,21 @@ def decode_global_err(register_value: int) -> list:
 class Max14906:
     """driver for MAX14906 chips on ROX-ECU board"""
 
-    def __init__(self, chip_address: int = 0):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        cs: DigitalInOut,
+        d_pins: list[DigitalInOut],
+        chip_address: int = 0,
+    ):
         self.chip_address = chip_address
+        self._spi = spi
+        self._cs = cs
 
-        if chip_address == 0:
-            self.d_pins = D_PINS[:4]
-            self.nfault = NFAULT_M1
-            self.nvddok = DigitalInOut(board.MAX1_NVDDOK)
-        elif chip_address == 1:
-            self.d_pins = D_PINS[4:]
-            self.nfault = NFAULT_M2
-            self.nvddok = DigitalInOut(board.MAX2_NVDDOK)
-        else:
-            raise ValueError(f"invalid chip address {chip_address}")
+        self.d_pins = d_pins
 
-        # check fault lines
-        assert not self.nvddok.value, f"NVDDOK line is high on chip {chip_address}"
+        for p in self.d_pins:
+            p.switch_to_output(False)
 
         self.get_global_error()  # clear the global error register
 
@@ -224,11 +141,40 @@ class Max14906:
 
     def read_register(self, reg: int) -> bytearray:
         """single cycle read"""
-        return read_register(reg, self.chip_address)
+        mosi_byte = (self.chip_address << 6) | (reg << 1) & 0xFE
+
+        data_out = bytes([mosi_byte, 0x00])
+        data_in = bytearray(2)
+
+        self._cs.value = False
+        self._spi.write_readinto(data_out, data_in)
+        self._cs.value = True
+
+        if DEBUG:
+            print(
+                f"read [{reg:02X}]({REGISTERS.get_name(reg)}) > {data_out.hex(' ')} , < {data_in.hex(' ')} ({data_in[1]:08b})"
+            )
+
+        return data_in
 
     def write_register(self, reg: int, data_byte: int) -> bytearray:
         """single cycle write, write a single byte to a register, returns the data read back"""
-        return write_register(reg, data_byte, self.chip_address)
+
+        mosi_byte = (self.chip_address << 6) | (reg << 1) | 0x1
+
+        data_out = bytes([mosi_byte, data_byte])
+        data_in = bytearray(2)
+
+        self._cs.value = False
+        self._spi.write_readinto(data_out, data_in)
+        self._cs.value = True
+
+        if DEBUG:
+            print(
+                f"write [{reg:02X}]({REGISTERS.get_name(reg)}) {data_out.hex(' ')} , < {data_in.hex(' ')}"
+            )
+
+        return data_in
 
     def get_global_error(self) -> int:
         """get the global error register"""

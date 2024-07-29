@@ -5,26 +5,28 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import time
-import max14906 as mx
+from icu_board import maxio, max1, max2, max_enable
 
-mx.DEBUG = True  # print debug info
-mx.ENABLE.value = True  # enable in- and outputs
 
-drv = mx.Max14906(chip_address=0)
-error = drv.get_global_error()
-print("global error:", error)
+maxio.DEBUG = True  # print debug info
+max_enable.value = True  # enable in- and outputs
 
-drv.print_registers()
+for drv in [max1, max2]:
+    print("chip address:", drv.chip_address)
+    error = drv.get_global_error()
+    print("global error:", error)
 
-# toggle outputs with D pins
+    drv.print_registers()
 
-for idx in range(16):
-    for pin in drv.d_pins:
-        pin.value = False
+    # toggle outputs with D pins
 
-    drv.d_pins[idx % 4].value = True
+    for idx in range(16):
+        for pin in drv.d_pins:
+            pin.value = False
 
-    time.sleep(0.1)
+        drv.d_pins[idx % 4].value = True
+
+        time.sleep(0.1)
 
 # disable all outputs
-mx.ENABLE.value = False
+max_enable.value = False
