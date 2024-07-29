@@ -44,6 +44,8 @@ from digitalio import DigitalInOut
 
 import neopixel
 import canio
+import busio
+import max14906 as mx
 
 
 class Pins:
@@ -120,6 +122,59 @@ _can_standby.switch_to_output(False)
 
 can = canio.CAN(rx=Pins.CAN_RX, tx=Pins.CAN_TX, baudrate=500_000, auto_restart=True)
 
+
+# spi interface
+spi = busio.SPI(Pins.SCK, Pins.MOSI, Pins.MISO)
+
+# lock the spi bus
+_spi_lock = False
+for retry in range(10):
+    _spi_lock = spi.try_lock()
+    if _spi_lock:
+        print(f"spi locked on attempt {retry}")
+        break
+
+if not _spi_lock:
+    raise RuntimeError("SPI lock failed")
+
+del _spi_lock
+
+spi.configure(baudrate=500_000, phase=0, polarity=0)
+
+
+# max14906 pins
+max_cs = DigitalInOut(Pins.MAX_CS)
+max_cs.switch_to_output(True)
+
+max_synch = DigitalInOut(Pins.MAX_SYNCH)
+max_synch.switch_to_output(True)
+
+max_nready = DigitalInOut(Pins.MAX_NREADY)
+
+max_crcen = DigitalInOut(Pins.MAX_CRCEN)
+max_crcen.switch_to_output(False)
+
+max_enable = DigitalInOut(Pins.MAX_ENABLE)
+max_enable.switch_to_output(False)
+
+max1_nfault = DigitalInOut(Pins.MAX1_NFAULT)
+max2_nfault = DigitalInOut(Pins.MAX2_NFAULT)
+
+
+# max chips
+_dpins = [
+    DigitalInOut(pin)
+    for pin in [Pins.MAX1_D1, Pins.MAX1_D2, Pins.MAX1_D3, Pins.MAX1_D4]
+]
+max1 = mx.Max14906(spi, max_cs, _dpins, chip_address=0)
+del _dpins
+
+_dpins = [
+    DigitalInOut(pin)
+    for pin in [Pins.MAX2_D1, Pins.MAX2_D2, Pins.MAX2_D3, Pins.MAX2_D4]
+]
+max2 = mx.Max14906(spi, max_cs, _dpins, chip_address=1)
+del _dpins
 
 # interface pins
 # D_PINS = [
