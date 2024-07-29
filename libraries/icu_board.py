@@ -90,7 +90,13 @@ class Pins:
 
 # ----- object instances -----
 
-# neopixel
+# leds
+led1 = DigitalInOut(Pins.LED1)
+led1.switch_to_output()
+
+led2 = DigitalInOut(Pins.LED2)
+led2.switch_to_output()
+
 rgb_led = neopixel.NeoPixel(Pins.NEOPIXEL, 1)
 
 # 5V supply, enable by default
