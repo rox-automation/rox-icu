@@ -1,35 +1,41 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Simple CAN protocol for ROX devices.
 
-This module is designed to be usable in both CPython and MicroPython, catering to low-resource environments such as embedded systems.
+This module provides a lightweight implementation of a CAN protocol designed for ROX devices.
+It is compatible with both CPython and MicroPython, making it suitable for use in
+low-resource environments such as embedded systems.
 
-Protocol definition
-=====================
+Protocol Definition
+===================
 
-Message ID : 11 bits, contains opcode and node ID.
+Message ID: 11 bits, containing opcode and node ID.
 * bits 10-7: opcode (0-15) - operation code
 * bits 6-0: node ID (0-127) - node identifier
 
 Node 0 is reserved for broadcast messages and CANopen NMT messages.
 
-How Messages Work
+Message Structure
 =================
 
-1. Messages are defined as standalone classes with their data attributes and methods for packing and unpacking binary data.
-2. The `byte_def` attribute in each message class defines the binary structure using struct format characters.
-3. The `opcode` class attribute uniquely identifies each message type.
-4. Messages are packed into bytes using the `pack` method, which returns both the message ID and the serialized data.
-5. Messages are unpacked from bytes using the `from_data` class method.
+Messages are defined using namedtuples, providing a simple and memory-efficient
+structure for handling data. Each message type has an associated opcode and
+byte definition for serialization.
+
+Key Components:
+1. Message definitions (HeartbeatMessage, IOStateMessage)
+2. MESSAGES tuple containing message classes and their byte definitions
+3. Utility functions for message ID generation and parsing
+4. Functions for packing and unparsing messages
 
 Adding New Messages
 ===================
 
 To add a new message type:
-1. Define a new class directly handling its data and serialization.
-2. Set the `byte_def` attribute with struct format characters in the class.
-3. Assign a unique `opcode` as a class attribute.
-4. Register the new message class in the `MESSAGES` dictionary to facilitate parsing.
+1. Define a new namedtuple with the required fields
+2. Add the new message type to the MESSAGES tuple with its byte definition
+3. The opcode for the new message will be its index in the MESSAGES tuple
 
 Struct Types Summary
 ====================
@@ -46,10 +52,26 @@ The `struct` module is used for packing and unpacking binary data. Common format
 
 Use '<' for little-endian or '>' for big-endian byte order as required.
 
+Type Hinting
+============
+
+This module uses type hinting for improved code clarity and error detection.
+However, to maintain compatibility with MicroPython, which may not support the
+`typing` module, type hints are implemented using a try-except block to import
+the necessary types.
+
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
+try:
+    from typing import NamedTuple
+except ImportError:
+    pass
+
+from collections import namedtuple
 import struct
+
+VERSION = 3
 
 
 def generate_message_id(opcode: int, node_id: int) -> int:
@@ -64,45 +86,37 @@ def split_message_id(message_id: int) -> tuple[int, int]:
     return opcode, node_id
 
 
-class HeartbeatMessage:
-    """Heartbeat message class."""
+# opcode 0
+HeartbeatMessage = namedtuple(
+    "HeartbeatMessage", ("device_type", "error_code", "counter", "io_state")
+)
 
-    __slots__ = ("node_id", "error_code", "error_count", "uptime", "version")
-    byte_def = "<BHIB"
-    opcode = 1
+# opcode 1
+IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-    def __init__(
-        self, node_id: int, error_code: int, error_count: int, uptime: int, version: int
-    ):
-        self.node_id = node_id
-        self.error_code = error_code
-        self.error_count = error_count
-        self.uptime = uptime
-        self.version = version
-
-    def pack(self) -> tuple[int, bytes]:
-        """Returns a tuple containing the message ID and packed data."""
-        message_id = generate_message_id(self.opcode, self.node_id)
-        data = struct.pack(
-            self.byte_def, self.error_code, self.error_count, self.uptime, self.version
-        )
-        return message_id, data
-
-    @classmethod
-    def from_data(cls, node_id: int, data: bytes) -> "HeartbeatMessage":
-        """Deserialize the message from bytes."""
-        fields = struct.unpack(HeartbeatMessage.byte_def, data)
-        return cls(node_id, *fields)
+# (message, byte_def) opcode is index in tuple for easy lookup
+MESSAGES = ((HeartbeatMessage, "<BBBB"), (IOStateMessage, "<B"))
 
 
-# Define opcode-to-message mapping
-MESSAGES = {HeartbeatMessage.opcode: HeartbeatMessage}
+def get_opcode(cls: NamedTuple) -> int:
+    """Get the opcode for a message type."""
+    for opcode, (msg_cls, _) in enumerate(MESSAGES):
+        if cls == msg_cls:
+            return opcode
+    raise ValueError("Unknown message type")
 
 
-def parse(message_id: int, data: bytes) -> HeartbeatMessage:
+def pack(opcode: int, msg: NamedTuple) -> bytes:
+    """
+    pack message data into bytes
+    for more efficient code packing just use
+    struct.pack(byte_def, *msg)"""
+    byte_def = MESSAGES[opcode][1]
+    return struct.pack(byte_def, *msg)
+
+
+def unpack(opcode: int, data: bytes) -> NamedTuple:
     """Parse a message from message ID and data bytes."""
-    opcode, node_id = split_message_id(message_id)
-    message_cls = MESSAGES.get(opcode)
-    if message_cls:
-        return message_cls.from_data(node_id, data)
-    raise ValueError(f"Unknown message opcode: {opcode}")
+
+    message_cls, byte_def = MESSAGES[opcode]
+    return message_cls(*struct.unpack(byte_def, data))
