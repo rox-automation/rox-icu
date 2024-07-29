@@ -41,7 +41,7 @@ print(f"nop: {t_nop:.3f} ms")
 gc.collect()
 t_start = time.monotonic_ns()
 for _ in range(iterations):
-    msg = protocol.HeartbeatMessage(1, 2, 3, 7)
+    msg = protocol.HeartbeatMessage(1, 2, 3, 4)
     data_bytes = struct.pack(byte_def, *msg)
 
 
@@ -52,12 +52,12 @@ print(f"pack: {t_pack:.3f} ms")
 
 # --------parse--------
 gc.collect()
-msg = protocol.HeartbeatMessage(1, 2, 3, 7)
+msg = protocol.HeartbeatMessage(1, 2, 3, 4)
 msg_id = protocol.generate_message_id(opcode, node_id)
 
 t_start = time.monotonic_ns()
 for _ in range(iterations):
-    msg2 = protocol.unpack(opcode, b"\x01\x02\x00\x03\x00\x00\x00\x07")
+    msg2 = protocol.unpack(opcode, b"\x01\x02\x03\x04")
 
 t_end = time.monotonic_ns()
 t_elapsed = (t_end - t_start) / 1e6
@@ -71,9 +71,7 @@ gc.collect()
 
 t_start = time.monotonic_ns()
 for _ in range(iterations):
-    msg2 = protocol.HeartbeatMessage(
-        *struct.unpack(byte_def, b"\x01\x02\x00\x03\x00\x00\x00\x07")
-    )
+    msg2 = protocol.HeartbeatMessage(*struct.unpack(byte_def, b"\x01\x02\x03\x04"))
 
 t_end = time.monotonic_ns()
 t_elapsed = (t_end - t_start) / 1e6

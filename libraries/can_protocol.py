@@ -88,14 +88,14 @@ def split_message_id(message_id: int) -> tuple[int, int]:
 
 # opcode 0
 HeartbeatMessage = namedtuple(
-    "HeartbeatMessage", "error_code error_count uptime version"
+    "HeartbeatMessage", ("device_type", "error_code", "counter", "io_state")
 )
 
 # opcode 1
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
 # (message, byte_def) opcode is index in tuple for easy lookup
-MESSAGES = ((HeartbeatMessage, "<BHIB"), (IOStateMessage, "<B"))
+MESSAGES = ((HeartbeatMessage, "<BBBB"), (IOStateMessage, "<B"))
 
 
 def get_opcode(cls: NamedTuple) -> int:
