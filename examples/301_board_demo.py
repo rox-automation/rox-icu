@@ -4,8 +4,6 @@ import asyncio
 import analogio
 import canio
 import gc
-from digitalio import DigitalInOut, Direction
-
 
 from icu_board import Pins, rgb_led, led1, led2, maxio, max1, max2, max_enable, can
 
@@ -56,9 +54,10 @@ async def read_button() -> None:
     prev_val = False
 
     global nr_button_presses
+    button = max1.d_pins[3]
 
     while True:
-        val = max1.d_pins[3].value
+        val = button.value
         if val != prev_val and val:
             nr_button_presses += 1
             print(f"Button pressed {nr_button_presses} times")
@@ -138,8 +137,8 @@ async def handle_outputs() -> None:
 
 async def send_can_messages() -> None:
     """send counter and number of button presses and sensor triggers over CAN"""
-
     counter = 0
+    scope_pin = max2.d_pins[2]
 
     while True:
         message = canio.Message(
@@ -153,6 +152,7 @@ async def send_can_messages() -> None:
         )
         can.send(message)
         counter += 1
+        scope_pin.value = not scope_pin.value
         gc.collect()
         await asyncio.sleep(0)
 
