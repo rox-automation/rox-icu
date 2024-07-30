@@ -71,10 +71,10 @@ except ImportError:
 from collections import namedtuple
 import struct
 
-VERSION = 3
+VERSION = 4
 
 
-def generate_message_id(opcode: int, node_id: int) -> int:
+def generate_message_id(node_id: int, opcode: int) -> int:
     """Generates an 11-bit message ID from opcode and node ID."""
     return (node_id << 5) | opcode
 
@@ -86,7 +86,7 @@ def split_message_id(message_id: int) -> tuple[int, int]:
     opcode = message_id & 0x1F  # Extract lower 5 bits for cmd_id
     node_id = message_id >> 5  # Shift right by 5 bits to get node_id
 
-    return opcode, node_id
+    return node_id, opcode
 
 
 # opcode 0
