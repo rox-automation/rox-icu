@@ -71,7 +71,7 @@ except ImportError:
 from collections import namedtuple
 import struct
 
-VERSION = 4
+VERSION = 5
 
 
 def generate_message_id(node_id: int, opcode: int) -> int:
@@ -89,12 +89,12 @@ def split_message_id(message_id: int) -> tuple[int, int]:
     return node_id, opcode
 
 
-# opcode 0
+# opcode 1
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage", ("device_type", "error_code", "counter", "io_state")
 )
 
-# opcode 1
+# opcode 2
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
 # (message, byte_def) opcode is index in tuple for easy lookup
@@ -105,7 +105,7 @@ def get_opcode(cls: NamedTuple) -> int:
     """Get the opcode for a message type."""
     for opcode, (msg_cls, _) in enumerate(MESSAGES):
         if cls == msg_cls:
-            return opcode
+            return opcode + 1
     raise ValueError("Unknown message type")
 
 
@@ -114,12 +114,12 @@ def pack(opcode: int, msg: NamedTuple) -> bytes:
     pack message data into bytes
     for more efficient code packing just use
     struct.pack(byte_def, *msg)"""
-    byte_def = MESSAGES[opcode][1]
+    byte_def = MESSAGES[opcode - 1][1]
     return struct.pack(byte_def, *msg)
 
 
 def unpack(opcode: int, data: bytes) -> NamedTuple:
     """Parse a message from message ID and data bytes."""
 
-    message_cls, byte_def = MESSAGES[opcode]
+    message_cls, byte_def = MESSAGES[opcode - 1]
     return message_cls(*struct.unpack(byte_def, data))
