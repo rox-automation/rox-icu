@@ -53,7 +53,7 @@ print(f"pack: {t_pack:.3f} ms")
 # --------parse--------
 gc.collect()
 msg = protocol.HeartbeatMessage(1, 2, 3, 4)
-msg_id = protocol.generate_message_id(opcode, node_id)
+msg_id = protocol.generate_message_id(node_id, opcode)
 
 t_start = time.monotonic_ns()
 for _ in range(iterations):
