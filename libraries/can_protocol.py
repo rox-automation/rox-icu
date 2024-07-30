@@ -10,8 +10,9 @@ Protocol Definition
 ===================
 
 Message ID: 11 bits, containing opcode and node ID.
-* bits 10-7: opcode (0-15) - operation code
-* bits 6-0: node ID (0-127) - node identifier
+
+* Upper 6 bits - Node ID - max 0x3F (63)
+* Lower 5 bits - Command ID - max 0x1F (31)
 
 Node 0 is reserved for broadcast messages and CANopen NMT messages.
 
@@ -75,13 +76,16 @@ VERSION = 3
 
 def generate_message_id(opcode: int, node_id: int) -> int:
     """Generates an 11-bit message ID from opcode and node ID."""
-    return (opcode << 7) | node_id
+    return (node_id << 5) | opcode
 
 
 def split_message_id(message_id: int) -> tuple[int, int]:
     """Splits a 11-bit message ID into opcode and node ID."""
-    node_id = message_id & 0x7F  # Extract the lower 7 bits for the node ID
-    opcode = message_id >> 7  # Shift right 7 bits to get the opcode
+
+    # same as odrive 3.6
+    opcode = message_id & 0x1F  # Extract lower 5 bits for cmd_id
+    node_id = message_id >> 5  # Shift right by 5 bits to get node_id
+
     return opcode, node_id
 
 
