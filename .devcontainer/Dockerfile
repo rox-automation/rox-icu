@@ -1,5 +1,5 @@
 
-FROM roxauto/circuitpython:9.0.4
+FROM roxauto/circuitpython:latest
 ARG USERNAME=dev
 ARG UID=1000
 ARG GID=1000
@@ -45,6 +45,9 @@ RUN pip install --upgrade pip
 # install user packages
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt && rm requirements.txt
+
+COPY requirements-dev.txt requirements-dev.txt
+RUN pip3 install -r requirements-dev.txt && rm requirements-dev.txt
 
 
 USER ${USERNAME}
