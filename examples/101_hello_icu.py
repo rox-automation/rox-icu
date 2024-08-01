@@ -12,7 +12,9 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 
-from icu_board import rgb_led, led1, led2
+from icu_board import rgb_led, led1, led2, D_PINS, max_enable
+
+max_enable.value = True  # enable the MAX14906 chips
 
 
 async def flash_led(led, interval=0.5):
@@ -21,6 +23,25 @@ async def flash_led(led, interval=0.5):
     while True:
         led.value = not led.value
         await asyncio.sleep(interval)
+
+
+async def switch_outputs():
+    """switch a couple of D pins on and off"""
+    print("switching D pins on and off")
+
+    d5 = D_PINS[4]
+    d6 = D_PINS[5]
+
+    d5.value = True
+    d6.value = False
+
+    print(d5)
+    print(d6)
+
+    while True:
+        d5.value = not d5.value
+        d6.value = not d6.value
+        await asyncio.sleep(1)
 
 
 async def cycle_neopixel():
@@ -52,6 +73,7 @@ async def main():
         flash_led(led1),  # flash led1 with default frequency
         flash_led(led2, 0.4),  # flash led2 faster
         cycle_neopixel(),  # cycle through the RGB colors
+        switch_outputs(),  # switch D pins on and off
     )
 
 

@@ -5,15 +5,6 @@ import busio
 DEBUG = False  # set to True  for verbose output
 
 
-# d-pins
-# D_PINS = [DigitalInOut(pin) for pin in board.D_PINS]
-# for p in D_PINS:
-#     p.switch_to_output(False)
-
-# map d-pins to names on the board
-# input_to_d_pins = dict(zip(["D5", "D6", "D7", "D8", "D1", "D2", "D3", "D4"], D_PINS))
-
-
 # ----------------- Max registers
 
 
