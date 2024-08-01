@@ -8,30 +8,33 @@ Running ICU as a remote IO device.
 import asyncio
 import struct
 import canio
-from icu_board import led1, can, maxio, max1, max2, max_enable
+from icu_board import led1, can, maxio, max2, max_enable, D_PINS
 from micropython import const
 import can_protocol as canp
 
 NODE_ID = const(0x01)
 
-
-BUTTION_PIN = const(3)
-SENSOR_PIN = const(0)
+BUTTON = const(7)
+SENSOR = const(0)
 
 # -------------- initialisation ----------------
 print(f"Can protocol version: {canp.VERSION}")
 
 # intialize system
 max_enable.value = True  # enable in- and outputs
-d_pins = max1.d_pins + max2.d_pins
 
-max1.switch_to_input(BUTTION_PIN)  # button
-max2.switch_to_input(SENSOR_PIN)  # sensor
+# configure inputs
+for pin_nr in [BUTTON, SENSOR]:
+    D_PINS[pin_nr].switch_to_input()
+
+# show state of all d pins
+for pin in D_PINS:
+    print(pin)
 
 
 def get_io_state() -> int:
     io_state = 0
-    for bit, pin in ((0, max1.d_pins[3]), (1, max2.d_pins[0])):
+    for bit, pin in enumerate(D_PINS):
         io_state |= pin.value << bit
     return io_state
 
