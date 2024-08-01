@@ -40,7 +40,7 @@ x board.NEOPIXEL_POWER (PB03)
 """
 
 from microcontroller import pin
-from digitalio import DigitalInOut
+from digitalio import DigitalInOut, Direction
 
 import neopixel
 import canio
@@ -200,8 +200,17 @@ class D_Pin:
     def value(self, value: bool):
         self.chip.d_pins[self.pin_nr].value = value
 
+    @property
+    def direction(self) -> Direction:
+        return self.chip.d_pins[self.pin_nr].direction
+
+    @direction.setter
+    def direction(self, direction: Direction):
+        self.chip.d_pins[self.pin_nr].direction = direction
+
     def __repr__(self):
-        return f"D_Pin({self.chip.chip_address}, {self.pin_nr})=>{self.value}"
+        dir_sign = "input" if self.direction == Direction.INPUT else "output"
+        return f"D_Pin({self.chip.chip_address}, {self.pin_nr},{dir_sign})"
 
 
 D_PINS = []
