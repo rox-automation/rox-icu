@@ -176,25 +176,35 @@ _dpins = [
 max2 = maxio.Max14906(spi, max_cs, _dpins, chip_address=1)
 del _dpins
 
-# interface pins
-# D_PINS = [
-#     MAX1_D1,  # D5
-#     MAX1_D2,  # D6
-#     MAX1_D3,  # D7
-#     MAX1_D4,  # D8
-#     MAX2_D1,  # D1
-#     MAX2_D2,  # D2
-#     MAX2_D3,  # D3
-#     MAX2_D4,  # D4
-# ]
+# -------------convenience class for D pins----------------
 
-# input_to_d_pins = {
-#     "D5": D_PINS[0],
-#     "D6": D_PINS[1],
-#     "D7": D_PINS[2],
-#     "D8": D_PINS[3],
-#     "D1": D_PINS[4],
-#     "D2": D_PINS[5],
-#     "D3": D_PINS[6],
-#     "D4": D_PINS[7],
-# }
+
+class D_Pin:
+    """wrapper around DigitalInOut and corresponding maxio pin"""
+
+    def __init__(self, max_chip: maxio.Max14906, pin_nr: int):
+        self.chip = max_chip
+        self.pin_nr = pin_nr
+
+    def switch_to_output(self, value: bool) -> None:
+        self.chip.switch_to_output(self.pin_nr, value)
+
+    def switch_to_input(self) -> None:
+        self.chip.switch_to_input(self.pin_nr)
+
+    @property
+    def value(self) -> bool:
+        return self.chip.d_pins[self.pin_nr].value
+
+    @value.setter
+    def value(self, value: bool):
+        self.chip.d_pins[self.pin_nr].value = value
+
+    def __repr__(self):
+        return f"D_Pin({self.chip.chip_address}, {self.pin_nr})=>{self.value}"
+
+
+D_PINS = []
+for max_chip in [max2, max1]:
+    for pin_nr in range(4):
+        D_PINS.append(D_Pin(max_chip, pin_nr))
