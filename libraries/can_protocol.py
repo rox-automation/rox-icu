@@ -27,7 +27,6 @@ Key Components:
 1. Message definitions (HeartbeatMessage, IOStateMessage)
 2. MESSAGES tuple containing message classes and their byte definitions
 3. Utility functions for message ID generation and parsing
-4. Functions for packing and unparsing messages
 
 Adding New Messages
 ===================
@@ -64,14 +63,13 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 try:
-    from typing import NamedTuple
+    from typing import NamedTuple, Tuple
 except ImportError:
     pass
 
 from collections import namedtuple
-import struct
 
-VERSION = 5
+VERSION = 6
 
 
 def generate_message_id(node_id: int, opcode: int) -> int:
@@ -79,7 +77,7 @@ def generate_message_id(node_id: int, opcode: int) -> int:
     return (node_id << 5) | opcode
 
 
-def split_message_id(message_id: int) -> tuple[int, int]:
+def split_message_id(message_id: int) -> Tuple[int, int]:
     """Splits a 11-bit message ID into opcode and node ID."""
 
     # same as odrive 3.6
@@ -89,37 +87,22 @@ def split_message_id(message_id: int) -> tuple[int, int]:
     return node_id, opcode
 
 
-# opcode 1
+# opcode 1, normally sent every 100ms
 HeartbeatMessage = namedtuple(
-    "HeartbeatMessage", ("device_type", "error_code", "counter", "io_state")
+    "HeartbeatMessage",
+    ("device_type", "error_max1", "error_max2", "io_state", "counter"),
 )
 
-# opcode 2
+# opcode 2, sent on change or request
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-# (message, byte_def) opcode is index in tuple for easy lookup
-MESSAGES = ((HeartbeatMessage, "<BBBB"), (IOStateMessage, "<B"))
+# (message, byte_def) opcode is index+1
+MESSAGES = ((HeartbeatMessage, "<BBBBB"), (IOStateMessage, "<B"))
 
 
-def get_opcode(cls: NamedTuple) -> int:
+def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
     """Get the opcode for a message type."""
-    for opcode, (msg_cls, _) in enumerate(MESSAGES):
+    for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
         if cls == msg_cls:
-            return opcode + 1
+            return opcode + 1, byte_def
     raise ValueError("Unknown message type")
-
-
-def pack(opcode: int, msg: NamedTuple) -> bytes:
-    """
-    pack message data into bytes
-    for more efficient code packing just use
-    struct.pack(byte_def, *msg)"""
-    byte_def = MESSAGES[opcode - 1][1]
-    return struct.pack(byte_def, *msg)
-
-
-def unpack(opcode: int, data: bytes) -> NamedTuple:
-    """Parse a message from message ID and data bytes."""
-
-    message_cls, byte_def = MESSAGES[opcode - 1]
-    return message_cls(*struct.unpack(byte_def, data))

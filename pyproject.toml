@@ -1,8 +1,89 @@
+#-----------------pyproject.toml configuration----------------
+[build-system]
+requires = ["setuptools >= 61.0", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "rox-icu"
+dynamic = ["dependencies", "optional-dependencies","version"]
+description = "grated control unit"
+authors = [
+    {name = "ROX Automation", email = "jev@roxautomation.com"},
+]
+license = {text = "MIT"}
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+requires-python = ">=3.9"
+
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {dev = { file = [".devcontainer/requirements-dev.txt"] }}
+
+
+
+[project.urls]
+Homepage = "https://github.com/rox-automation/rox-icu"
+
+[project.scripts]
+icu = "rox_icu.cli:cli"
+
+
+[tool.setuptools_scm]
+
+
+#--------------mypy configuration----------------
+[tool.mypy]
+# Global options can be specified here
+disallow_untyped_defs = false
+ignore_missing_imports = true
+disable_error_code = ["attr-defined"]
+
+
+#-----------------pytest configuration----------------
+[tool.pytest.ini_options]
+filterwarnings = "ignore::DeprecationWarning:dateutil.*"
+
+log_cli = false
+log_cli_level = "DEBUG"
+log_cli_format = "%(asctime)s [%(levelname)s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%H:%M:%S"
+
+#-----------------coverage configuration----------------
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
+#------------------pylint configuration----------------
+[tool.pylint.messages_control]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "invalid-name",
+    "logging-fstring-interpolation",
+    "unused-argument",
+    "import-outside-toplevel",
+    "broad-except",
+    "line-too-long",
+    "useless-super-delegation",
+]
+[tool.pylint.typecheck]
+
+ignored-modules = ["orjson"]
+
+#------------------pyright configuration----------------
 [tool.pyright]
 reportMissingModuleSource = false
 reportMissingImports = false
-
-[tool.mypy]
-ignore_missing_imports = true
-
-disable_error_code = ["attr-defined"]

@@ -1,7 +1,6 @@
 {
   "initializeCommand": "mkdir -p /var/tmp/container-extensions", // executed on HOST system
 
-
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
