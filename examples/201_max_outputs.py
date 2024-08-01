@@ -5,7 +5,7 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import time
-from icu_board import maxio, max1, max2, max_enable
+from icu_board import maxio, max1, max2, max_enable, D_PINS
 
 
 maxio.DEBUG = True  # print debug info
@@ -20,13 +20,12 @@ for drv in [max1, max2]:
 
     # toggle outputs with D pins
 
-    for idx in range(16):
-        for pin in drv.d_pins:
-            pin.value = False
+for pin in D_PINS:
+    print("toggling", pin)
+    pin.value = True
+    time.sleep(0.5)
+    pin.value = False
 
-        drv.d_pins[idx % 4].value = True
-
-        time.sleep(0.1)
 
 # disable all outputs
 max_enable.value = False
