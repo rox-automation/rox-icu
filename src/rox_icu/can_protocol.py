@@ -72,6 +72,13 @@ from collections import namedtuple
 VERSION = 7
 
 
+class DeviceState:
+    """Device state flags"""
+
+    RUNNING = 0
+    STOPPED = 1
+
+
 def generate_message_id(node_id: int, opcode: int) -> int:
     """Generates an 11-bit message ID from opcode and node ID."""
     return (node_id << 5) | opcode
