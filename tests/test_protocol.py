@@ -1,9 +1,38 @@
 import can_protocol as protocol
 import struct
+import pytest
 
 
 def test_version() -> None:
     assert protocol.VERSION == 6
+
+
+def test_invalid_message() -> None:
+    class InvalidMessage:
+        pass
+
+    with pytest.raises(ValueError):
+        protocol.get_opcode_and_bytedef(InvalidMessage)
+
+
+def test_halt() -> None:
+    test_bytes = b"\x01"
+
+    msg = protocol.HaltMessage(1)
+    assert msg.io_state == 1
+
+    opcode, byte_def = protocol.get_opcode_and_bytedef(protocol.HaltMessage)
+    assert opcode == 0
+    assert byte_def == "<B"
+
+    data_bytes = struct.pack(byte_def, *msg)
+
+    assert data_bytes == test_bytes
+
+    # convert back
+    msg2 = protocol.HaltMessage(*struct.unpack(byte_def, test_bytes))
+
+    assert msg == msg2
 
 
 def test_heartbeat() -> None:

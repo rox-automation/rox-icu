@@ -64,7 +64,7 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 try:
     from typing import NamedTuple, Tuple
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from collections import namedtuple
@@ -87,6 +87,10 @@ def split_message_id(message_id: int) -> Tuple[int, int]:
     return node_id, opcode
 
 
+# opcode 0
+HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io state.
+
+
 # opcode 1, normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
@@ -96,8 +100,8 @@ HeartbeatMessage = namedtuple(
 # opcode 2, sent on change or request
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-# (message, byte_def) opcode is index+1
-MESSAGES = ((HeartbeatMessage, "<BBBBB"), (IOStateMessage, "<B"))
+# (message, byte_def) opcode is index
+MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBB"), (IOStateMessage, "<B"))
 
 
 def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
