@@ -110,6 +110,8 @@ IOStateMessage = namedtuple("IOStateMessage", "io_state")
 # (message, byte_def) opcode is index
 MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage, "<B"))
 
+OPCODE2MSG = {i: msg for i, (msg, _) in enumerate(MESSAGES)}
+
 
 def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
     """Get the opcode for a message type."""
