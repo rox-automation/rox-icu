@@ -69,7 +69,7 @@ except ImportError:  # pragma: no cover
 
 from collections import namedtuple
 
-VERSION = 6
+VERSION = 7
 
 
 def generate_message_id(node_id: int, opcode: int) -> int:
@@ -94,19 +94,19 @@ HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io stat
 # opcode 1, normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
-    ("device_type", "error_max1", "error_max2", "io_state", "counter"),
+    ("device_type", "error_max1", "error_max2", "io_state", "device_state", "counter"),
 )
 
 # opcode 2, sent on change or request
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
 # (message, byte_def) opcode is index
-MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBB"), (IOStateMessage, "<B"))
+MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage, "<B"))
 
 
 def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
     """Get the opcode for a message type."""
     for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
         if cls == msg_cls:
-            return opcode + 1, byte_def
+            return opcode, byte_def
     raise ValueError("Unknown message type")
