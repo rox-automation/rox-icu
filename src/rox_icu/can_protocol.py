@@ -64,12 +64,19 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 try:
     from typing import NamedTuple, Tuple
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from collections import namedtuple
 
-VERSION = 6
+VERSION = 7
+
+
+class DeviceState:
+    """Device state flags"""
+
+    RUNNING = 0
+    STOPPED = 1
 
 
 def generate_message_id(node_id: int, opcode: int) -> int:
@@ -87,22 +94,28 @@ def split_message_id(message_id: int) -> Tuple[int, int]:
     return node_id, opcode
 
 
+# opcode 0
+HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io state.
+
+
 # opcode 1, normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
-    ("device_type", "error_max1", "error_max2", "io_state", "counter"),
+    ("device_type", "error_max1", "error_max2", "io_state", "device_state", "counter"),
 )
 
 # opcode 2, sent on change or request
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-# (message, byte_def) opcode is index+1
-MESSAGES = ((HeartbeatMessage, "<BBBBB"), (IOStateMessage, "<B"))
+# (message, byte_def) opcode is index
+MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage, "<B"))
+
+OPCODE2MSG = {i: msg for i, (msg, _) in enumerate(MESSAGES)}
 
 
 def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
     """Get the opcode for a message type."""
     for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
         if cls == msg_cls:
-            return opcode + 1, byte_def
+            return opcode, byte_def
     raise ValueError("Unknown message type")

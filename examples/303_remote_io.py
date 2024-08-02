@@ -8,7 +8,7 @@ Running ICU as a remote IO device.
 import asyncio
 import struct
 import canio
-from icu_board import led1, can, maxio, max2, max_enable, D_PINS
+from icu_board import led1, can, maxio, max1, max2, max_enable, D_PINS
 from micropython import const
 import can_protocol as canp
 
@@ -43,7 +43,6 @@ async def read_inputs() -> None:
     """read inputs and send can message on change"""
 
     # configuration
-    scope_pin = max2.d_pins[2]
 
     # set scope pin to push-pull
     max2.write_register(maxio.REGISTERS.CONFIG_DO, 0x30)
@@ -51,10 +50,9 @@ async def read_inputs() -> None:
     io_state = get_io_state()
     prev_io_state = io_state
 
-    msg_id = canp.generate_message_id(NODE_ID, 2)
+    opcode, byte_def = canp.get_opcode_and_bytedef(canp.IOStateMessage)
+    msg_id = canp.generate_message_id(NODE_ID, opcode)
     print(f"IOStateMessage ID: {msg_id:x}")
-
-    byte_def = canp.BYTE_DEFS[canp.IOStateMessage]
 
     while True:
         # get state of all pins
@@ -66,20 +64,25 @@ async def read_inputs() -> None:
 
         prev_io_state = io_state
 
-        scope_pin.value = not scope_pin.value
-
         await asyncio.sleep(0)
 
 
 async def heartbeat_loop() -> None:
     counter = 0
-    byte_def = canp.BYTE_DEFS[canp.HeartbeatMessage]
-    msg_id = canp.generate_message_id(NODE_ID, 1)
+
+    opcode, byte_def = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)
+
+    msg_id = canp.generate_message_id(NODE_ID, opcode)
     print(f"HeartbeatMessage ID: {msg_id:x}")
 
     while True:
         msg = canp.HeartbeatMessage(
-            device_type=1, error_code=0, counter=counter & 0xFF, io_state=get_io_state()
+            device_type=1,
+            error_max1=max1.get_global_error(),
+            error_max2=max2.get_global_error(),
+            io_state=get_io_state(),
+            device_state=0,
+            counter=counter & 0xFF,
         )
         can_msg = canio.Message(id=msg_id, data=struct.pack(byte_def, *msg))
         can.send(can_msg)

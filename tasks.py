@@ -1,5 +1,42 @@
 from invoke import task
 import os
+from click import prompt
+
+
+@task
+def clean(ctx):
+    """
+    Remove all files and directories that are not under version control to ensure a pristine working environment.
+    Use caution as this operation cannot be undone and might remove untracked files.
+
+    """
+
+    ctx.run("git clean -nfdx")
+
+    if (
+        prompt(
+            "Are you sure you want to remove all untracked files? (y/n)", default="n"
+        )
+        == "y"
+    ):
+        ctx.run("git clean -fdx")
+
+
+@task
+def lint(ctx):
+    """
+    Perform static analysis on the source code to check for syntax errors and enforce style consistency.
+    """
+    ctx.run("ruff check src tests")
+    ctx.run("mypy src")
+
+
+@task
+def test(ctx):
+    """
+    Run tests with coverage reporting to ensure code functionality and quality.
+    """
+    ctx.run("pytest --cov=src --cov-report term-missing tests")
 
 
 @task
