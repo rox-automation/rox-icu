@@ -45,12 +45,14 @@ class ICU:
         self.io_state: int = 0
         self._heartbeat_msg: Optional[protocol.HeartbeatMessage] = None
         self._hb_timer: Timer = Timer(timeout=0.5)
+        self._log = logging.getLogger(f"ICU_{node_id}")
 
     def process_message(self, opcode: int, data: bytes) -> None:
         """Process incoming message"""
         match opcode:
             case 1:
                 self._heartbeat_msg = protocol.HeartbeatMessage(*data)
+                self._log.debug(self._heartbeat_msg)
                 self.io_state = self._heartbeat_msg.io_state
                 self._hb_timer.reset()
             case 2:
@@ -59,6 +61,20 @@ class ICU:
             case _:
                 pass
 
+    def is_alive(self) -> bool:
+        """Check if device is alive"""
+        if self._heartbeat_msg is None:
+            return False
+
+        if self._hb_timer.is_timeout():
+            self._log.error("Device dead")
+            return False
+
+        return True
+
+    def __repr__(self) -> str:
+        return f"<ICU {self.node_id} io_state={self.io_state}>"
+
 
 class Supervisor:
     """listens to can messages and manages devices"""
@@ -66,6 +82,7 @@ class Supervisor:
     def __init__(
         self, interface: str = "can0", interface_type: str = "socketcan"
     ) -> None:
+        self.devices: dict[int, ICU] = {}
         self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._bus: can.BusABC = can.interface.Bus(
             channel=interface, interface=interface_type
@@ -140,19 +157,17 @@ class Supervisor:
                 )
                 self._msg_queue.task_done()
 
-                match opcode:
-                    case 0:
-                        pass
-                    case 1:
-                        if len(data) != 6:
-                            self._log.debug("Invalid heartbeat message length")
-                            continue
-                        msg: protocol.HeartbeatMessage = protocol.HeartbeatMessage(
-                            *data
-                        )
-                        self._log.debug(f"Heartbeat message: {msg}")
-                    case 2:
-                        pass
+                if opcode == 1:
+                    if len(data) != 6:
+                        self._log.debug("Invalid heartbeat message length")
+                        continue
+
+                    if node_id not in self.devices:
+                        self.devices[node_id] = ICU(node_id)
+
+                if node_id in self.devices:
+                    self.devices[node_id].process_message(opcode, data)
+
             except asyncio.TimeoutError:
                 # This allows the loop to check the running flag periodically
                 continue
@@ -182,6 +197,7 @@ if __name__ == "__main__":
         with Supervisor(interface="slcan0") as supervisor:
             await supervisor.start()
             await asyncio.sleep(1)
-        print("done")
+        print("Devices:")
+        print(supervisor.devices)
 
     asyncio.run(main())
