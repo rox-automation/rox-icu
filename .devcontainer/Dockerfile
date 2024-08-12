@@ -46,9 +46,6 @@ RUN pip install --upgrade pip
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt && rm requirements.txt
 
-COPY requirements-dev.txt requirements-dev.txt
-RUN pip3 install -r requirements-dev.txt && rm requirements-dev.txt
-
 
 USER ${USERNAME}
 RUN echo 'export PS1="🐳  \[\033[1;36m\]'"${PROJECT}"' \[\e[33m\]\W\[\e[m\] \[\033[1;36m\]# \[\033[0m\]"' >> ~/.bashrc
