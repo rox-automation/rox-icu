@@ -2,7 +2,8 @@
 
 set -e
 
-BOARD=adafruit_feather_rp2040_can
+# list boards with `circuitpython_setboard --list`
+BOARD=feather_m4_can
 
 sudo circuitpython_setboard $BOARD
 
