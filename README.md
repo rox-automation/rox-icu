@@ -7,7 +7,7 @@ Software and documentation for ROX Integrated Control Unit
 
 ![](assets/icu-board.jpg)
 
-ROX Integrated Control Unit (ICU) is a modern, open-source alternative to conventional PLCs, designed for demanding industrial applications. Based on the Adafruit Feather M4 CAN platform, this compact device integrates a controller, I/O, and CAN interface into a single, robust package.
+ROX Integrated Control Unit (ICU) is a modern, open-source alternative to conventional PLCs, designed for demanding industrial applications. Based on the Adafruit Feather M4 CAN platform, this compact device integrates an automotive-grade microcontroller, digital I/O, analog inputs, and CAN interface into a single, robust package.
 
 ## Key Features:
 
