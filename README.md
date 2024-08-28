@@ -30,8 +30,8 @@ VDD Detection
         - Watchdog Timer etc.
 
     - 2x analog input, 0..10V range, including reference voltage generator.
-- **Versatile Connectivity:** Pass-through CAN connection for flexible integration.
-- **Efficient Processing:** Features a 120MHz Cortex M4 processor with floating-point support, 512KB Flash, and 192KB RAM.
+- **Connectivity:** Pass-through CAN connection for flexible integration.
+- **Powerful Processing:** Features a 120MHz Cortex M4 processor with floating-point support, 512KB Flash, and 192KB RAM.
 - **Compact Design:** Measures 96 x 57 mm, only slightly larger than a credit card.
 - **Environmental Durability:** IP67 rated and shock-resistant, suitable for harsh industrial environments and mobile machinery.
 - **Flexible Programming:** Compatible with Arduino, CircuitPython, C/C++ and Rust
