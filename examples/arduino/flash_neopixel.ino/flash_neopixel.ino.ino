@@ -8,7 +8,6 @@ const int numColors = sizeof(colors) / sizeof(colors[0]);
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) delay(10);  // Wait for Serial Monitor to open
 
   Serial.print("Running neopixel demo ");
 
