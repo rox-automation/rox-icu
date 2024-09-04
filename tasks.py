@@ -3,6 +3,18 @@ import os
 from click import prompt
 
 
+def get_mount_point():
+    mount_point = None
+    for root, dirs, files in os.walk("/media"):
+        if "CIRCUITPY" in dirs:
+            mount_point = os.path.join(root, "CIRCUITPY")
+            print(f"CIRCUITPY mount point found: {mount_point}")
+            return mount_point
+
+    if mount_point is None:
+        raise FileNotFoundError("CIRCUITPY mount point not found")
+
+
 @task
 def clean(ctx):
     """
@@ -48,17 +60,7 @@ def install(ctx):
 @task
 def sync(ctx):
     """sync code with the board"""
-    mount_point = None
-    for root, dirs, files in os.walk("/media"):
-        if "CIRCUITPY" in dirs:
-            mount_point = os.path.join(root, "CIRCUITPY")
-            break
-
-    if not mount_point:
-        print("CircuitPython drive not found")
-        return
-
-    print(f"CircuitPython drive found at {mount_point}")
+    mount_point = get_mount_point()
 
     # Directory where the lib files will be copied
     destination = os.path.join(mount_point, "lib")
@@ -71,3 +73,14 @@ def sync(ctx):
 
     # Flush buffers
     ctx.run("sync")
+
+
+@task(pre=[install, sync])
+def init(ctx):
+    """initialize the board, use blink as the main code"""
+    mount_point = get_mount_point()
+
+    # Copy the main code
+    ctx.run(f"cp examples/101_hello_icu.py {mount_point}/code.py")
+
+    # Flush
