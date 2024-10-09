@@ -74,6 +74,41 @@ There use `ampy` or `mpremote`:
 *  `ampy run <script.py>` (set `AMPY_PORT` env variable first)
 *  `mpremote <port> run <script.py>` (use shortcuts for <port>, like `a1` for `/dev/ttyACM1` if required)
 
+### Pin mapping
+
+output of `dev/show_pins.py`
+
+```
+board.A0 board.D14 (PA02)
+board.A1 board.D15 (PA05)
+board.A2 board.D16 (PB08)
+board.A3 board.D17 (PB09)
+board.A4 board.D18 (PA04)
+board.A5 board.D19 (PA06)
+board.BATTERY board.VOLTAGE_MONITOR (PB00)
+board.BOOST_ENABLE (PB13)
+board.CAN_RX (PB15)
+board.CAN_STANDBY (PB12)
+board.CAN_TX (PB14)
+board.D0 board.RX (PB17)
+board.D1 board.TX (PB16)
+board.D10 (PA20)
+board.D11 (PA21)
+board.D12 (PA22)
+board.D13 board.LED (PA23)
+board.D23 board.MISO (PB22)
+board.D24 board.MOSI (PB23)
+board.D25 board.SCK (PA17)
+board.D4 (PA14)
+board.D5 (PA16)
+board.D6 (PA18)
+board.D9 (PA19)
+board.NEOPIXEL (PB02)
+board.NEOPIXEL_POWER (PB03)
+board.SCL (PA13)
+board.SDA (PA12)
+```
+
 
 
 ## Licenses
