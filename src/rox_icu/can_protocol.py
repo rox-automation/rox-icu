@@ -113,9 +113,9 @@ MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage,
 OPCODE2MSG = {i: msg for i, (msg, _) in enumerate(MESSAGES)}
 
 
-def get_opcode_and_bytedef(cls: NamedTuple) -> Tuple[int, str]:
+def get_opcode_and_bytedef(message_class: NamedTuple) -> Tuple[int, str]:
     """Get the opcode for a message type."""
     for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
-        if cls == msg_cls:
+        if message_class == msg_cls:
             return opcode, byte_def
     raise ValueError("Unknown message type")
