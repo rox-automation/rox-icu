@@ -39,7 +39,7 @@ x board.NEOPIXEL_POWER (PB03)
 
 """
 
-from microcontroller import pin
+from microcontroller import pin  # type: ignore
 from digitalio import DigitalInOut, Direction
 
 import neopixel
