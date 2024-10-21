@@ -63,7 +63,7 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 try:
-    from typing import NamedTuple, Tuple
+    from typing import Type, NamedTuple, Tuple
 except ImportError:  # pragma: no cover
     pass
 
@@ -113,9 +113,9 @@ MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage,
 OPCODE2MSG = {i: msg for i, (msg, _) in enumerate(MESSAGES)}
 
 
-def get_opcode_and_bytedef(message_class: NamedTuple) -> Tuple[int, str]:
+def get_opcode_and_bytedef(message_class: Type[NamedTuple]) -> Tuple[int, str]:  # type:ignore
     """Get the opcode for a message type."""
     for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
-        if message_class == msg_cls:
+        if message_class == msg_cls:  # type:ignore
             return opcode, byte_def
     raise ValueError("Unknown message type")
