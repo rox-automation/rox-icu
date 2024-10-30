@@ -2,9 +2,10 @@
 """
 ICU Mock CAN Interface
 
-This mock simulates the ICU (Integrated Control Unit) CAN interface, providing a
-virtual environment to test the Python driver for remote I/O functionalities.
-This implementation is inspired by an ODrive mock previously written.
+This mock simulates the ICU (Integrated Control Unit) CAN interface,
+providing a virtual environment to test the Python driver for remote I/O
+functionalities.
+
 
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
@@ -15,16 +16,13 @@ import struct
 from typing import Optional
 
 import can
-import coloredlogs  # type: ignore
+from rox_icu.utils import run_main
 from rox_icu.can_protocol import (
     HeartbeatMessage,
     generate_message_id,
     get_opcode_and_bytedef,
 )
 
-# Configuration for logging
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-TIME_FORMAT = "%H:%M:%S"
 
 # Constants for CAN messages
 NODE_ID = 0x01
@@ -94,9 +92,9 @@ class ICUMockCAN:
                     f"Received message ID: {msg.arbitration_id:x}, Data: {msg.data}"
                 )
                 # Update IO based on received data (example)
-                self.icumock.update_io_state(
-                    int.from_bytes(msg.data, byteorder="little")
-                )
+                # self.icumock.update_io_state(
+                #     int.from_bytes(msg.data, byteorder="little")
+                # )
 
             except Exception as e:
                 self.log.error(f"Error in message handler: {e}")
@@ -155,5 +153,4 @@ def main(node_id: int = NODE_ID, interface: str = "vcan0"):
 
 
 if __name__ == "__main__":
-    coloredlogs.install(level="DEBUG", fmt=LOG_FORMAT, datefmt=TIME_FORMAT)
-    main()
+    run_main(main)
