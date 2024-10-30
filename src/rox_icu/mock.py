@@ -89,7 +89,7 @@ class ICUMockCAN:
 
                 # Decode message
                 self.log.info(
-                    f"Received message ID: {msg.arbitration_id:x}, Data: {msg.data}"
+                    f"Received message ID: {msg.arbitration_id:x}, Data: {msg.data.hex(" ")}"
                 )
                 # Update IO based on received data (example)
                 # self.icumock.update_io_state(
