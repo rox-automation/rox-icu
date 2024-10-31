@@ -17,11 +17,7 @@ from typing import Optional
 
 import can
 from rox_icu.utils import run_main
-from rox_icu.can_protocol import (
-    HeartbeatMessage,
-    generate_message_id,
-    get_opcode_and_bytedef,
-)
+import rox_icu.can_protocol as canp
 
 
 # Constants for CAN messages
@@ -82,15 +78,20 @@ class ICUMockCAN:
 
         while True:
             try:
-                msg = await self.can_reader.get_message()
-                if msg.arbitration_id >> 5 != self.node_id:
-                    # Ignore messages that are not for this node ID
+                raw_msg = await self.can_reader.get_message()
+
+                node_id, opcode = canp.split_message_id(raw_msg.arbitration_id)
+
+                # Ignore messages that are not for this node ID
+                if node_id != self.node_id:
                     continue
 
-                # Decode message
-                self.log.info(
-                    f"Received message ID: {msg.arbitration_id:x}, Data: {msg.data.hex(" ")}"
+                self.log.debug(
+                    f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(" ")}"
                 )
+
+                # Get the message class and byte definition
+
                 # Update IO based on received data (example)
                 # self.icumock.update_io_state(
                 #     int.from_bytes(msg.data, byteorder="little")
@@ -103,13 +104,13 @@ class ICUMockCAN:
         """Send heartbeat message."""
         self.log.info("Starting heartbeat loop")
 
-        opcode, byte_def = get_opcode_and_bytedef(HeartbeatMessage)
-        msg_id = generate_message_id(self.node_id, opcode)
+        opcode, byte_def = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)
+        msg_id = canp.generate_message_id(self.node_id, opcode)
         counter = 0
 
         while True:
             # Construct the heartbeat message
-            heartbeat = HeartbeatMessage(
+            heartbeat = canp.HeartbeatMessage(
                 device_type=1,
                 error_max1=self.icumock.error_max1,
                 error_max2=self.icumock.error_max2,
