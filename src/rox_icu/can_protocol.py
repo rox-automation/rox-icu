@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 ROX CAN Protocol Implementation
 
@@ -41,7 +42,7 @@ Adding New Messages
 2. Add entry to _MSG_DEFS with (opcode, byte_definition)
 3. Byte definition uses struct format chars (B=uint8, H=uint16, etc.)
 
-Copyright (c) 2024 ROX Automation - Jev Kuznetsov
+
 """
 
 try:
