@@ -55,9 +55,11 @@ async def receive_messages(reader):
     try:
         while True:
             raw_msg = await reader.get_message()
+            node_id = canp.get_node_id(raw_msg.arbitration_id)
+
             msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
 
-            log.info(f"Received message: {msg}")
+            log.info(f"< node [{node_id}] message: {msg.__class__.__name__}")
 
     except asyncio.CancelledError:
         log.info("Receive messages cancelled")
