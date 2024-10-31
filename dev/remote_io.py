@@ -7,17 +7,11 @@ ICU functions as remote I/O device with CAN interface.
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
-import struct
 import asyncio
 import can
 import logging
 from rox_icu.utils import run_main
-from rox_icu.can_protocol import (
-    IOStateMessage,
-    generate_message_id,
-    get_opcode_and_bytedef,
-)
-
+import rox_icu.can_protocol as canp
 
 NODE_ID = 0x01
 
@@ -31,18 +25,15 @@ def print_message(msg):
 
 # Coroutine to send messages
 async def send_messages(bus) -> None:
-    opcode, byte_def = get_opcode_and_bytedef(IOStateMessage)
-    msg_id = generate_message_id(NODE_ID, opcode)
-
     io_state = 0
 
     try:
         for i in range(16):
-            io_msg = IOStateMessage(io_state)
+            io_msg = canp.IOStateMessage(io_state)
 
-            bus_msg = can.Message(
-                arbitration_id=msg_id, data=struct.pack(byte_def, *io_msg)
-            )
+            arb_id, data = canp.encode_message(io_msg, NODE_ID)
+
+            bus_msg = can.Message(arbitration_id=arb_id, data=data)
             bus.send(bus_msg)
 
             # shift the io_state by 1 bit
@@ -63,10 +54,10 @@ async def send_messages(bus) -> None:
 async def receive_messages(reader):
     try:
         while True:
-            msg = await reader.get_message()
-            log.info(
-                f"Received message ID: {msg.arbitration_id:x}, Data: {msg.data.hex(" ")}"
-            )
+            raw_msg = await reader.get_message()
+            msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
+
+            log.info(f"Received message: {msg}")
 
     except asyncio.CancelledError:
         log.info("Receive messages cancelled")

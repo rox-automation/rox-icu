@@ -12,13 +12,12 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 import logging
-import struct
 from typing import Optional
 
 import can
-from rox_icu.utils import run_main
-import rox_icu.can_protocol as canp
 
+import rox_icu.can_protocol as canp
+from rox_icu.utils import run_main
 
 # Constants for CAN messages
 NODE_ID = 0x01
@@ -80,7 +79,7 @@ class ICUMockCAN:
             try:
                 raw_msg = await self.can_reader.get_message()
 
-                node_id, opcode = canp.split_message_id(raw_msg.arbitration_id)
+                node_id = canp.get_node_id(raw_msg.arbitration_id)
 
                 # Ignore messages that are not for this node ID
                 if node_id != self.node_id:
@@ -90,12 +89,8 @@ class ICUMockCAN:
                     f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(" ")}"
                 )
 
-                # Get the message class and byte definition
-
-                # Update IO based on received data (example)
-                # self.icumock.update_io_state(
-                #     int.from_bytes(msg.data, byteorder="little")
-                # )
+                msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
+                self.log.info(f"Received message: {msg}")
 
             except Exception as e:
                 self.log.error(f"Error in message handler: {e}")
@@ -104,9 +99,10 @@ class ICUMockCAN:
         """Send heartbeat message."""
         self.log.info("Starting heartbeat loop")
 
-        opcode, byte_def = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)
-        msg_id = canp.generate_message_id(self.node_id, opcode)
         counter = 0
+
+        # Note: this can be more efficient by pre-calculating arb_id and msg_def
+        # and using struct.pack directly
 
         while True:
             # Construct the heartbeat message
@@ -118,9 +114,11 @@ class ICUMockCAN:
                 device_state=0,
                 counter=counter,  # Increment counter for each loop
             )
-            data_bytes = struct.pack(byte_def, *heartbeat)
+
+            arb_id, data_bytes = canp.encode_message(heartbeat, self.node_id)
+
             message = can.Message(
-                arbitration_id=msg_id,
+                arbitration_id=arb_id,
                 data=data_bytes,
                 is_extended_id=False,
             )
