@@ -87,3 +87,5 @@ ignored-modules = ["orjson"]
 [tool.pyright]
 reportMissingModuleSource = false
 reportMissingImports = false
+reportAttributeAccessIssue = false
+reportPossiblyUnboundVariable = false
