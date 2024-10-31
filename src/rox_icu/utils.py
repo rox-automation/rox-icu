@@ -56,7 +56,7 @@ def run_main(func: MainFunction[T]) -> T:
             return cast(Callable[[], T], func)()
     except KeyboardInterrupt:
         logging.info("Process interrupted by user")
-        raise
+        return cast(T, None)
     except Exception as e:
         logging.error(e)
         raise
