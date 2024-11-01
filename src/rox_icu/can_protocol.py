@@ -47,11 +47,11 @@ Adding New Messages
 
 try:
     from typing import TYPE_CHECKING
-except ImportError:
+except ImportError:  # pragma: no cover
     TYPE_CHECKING = False
 
 if TYPE_CHECKING:
-    from typing import Type, NamedTuple, Tuple
+    from typing import Type, NamedTuple, Tuple  # pragma: no cover
 
 import struct
 from collections import namedtuple

@@ -23,7 +23,7 @@ def state_change_callback(device: ICU) -> None:
 async def main():
     # create icus
     devices = [
-        ICU(node_id, INTERFACE, state_change_callback=state_change_callback)
+        ICU(node_id, INTERFACE, on_dio_change=state_change_callback)
         for node_id in range(1, 3)
     ]
 

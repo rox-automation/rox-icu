@@ -1,10 +1,28 @@
-import can_protocol as protocol
+from rox_icu import can_protocol as canp
 import struct
 import pytest
 
 
 def test_version() -> None:
-    assert protocol.VERSION == 8
+    assert canp.VERSION == 8
+
+
+def test_split() -> None:
+    message_id = 0x2C
+
+    assert canp.split_message_id(message_id) == (0x01, 0x0C)
+
+
+def test_node_id() -> None:
+    for node_id in range(64):
+        assert canp.get_node_id(canp.generate_message_id(node_id, 0)) == node_id
+
+
+def test_roundtip() -> None:
+    for endpoint in range(32):
+        for node_id in range(64):
+            message_id = canp.generate_message_id(node_id, endpoint)
+            assert canp.split_message_id(message_id) == (node_id, endpoint)
 
 
 def test_invalid_message() -> None:
@@ -12,16 +30,16 @@ def test_invalid_message() -> None:
         pass
 
     with pytest.raises(KeyError):
-        protocol.get_opcode_and_bytedef(InvalidMessage)
+        canp.get_opcode_and_bytedef(InvalidMessage)  # type: ignore
 
 
 def test_halt() -> None:
     test_bytes = b"\x01"
 
-    msg = protocol.HaltMessage(1)
+    msg = canp.HaltMessage(1)
     assert msg.io_state == 1
 
-    opcode, byte_def = protocol.get_opcode_and_bytedef(protocol.HaltMessage)
+    opcode, byte_def = canp.get_opcode_and_bytedef(canp.HaltMessage)
     assert opcode == 0
     assert byte_def == "<B"
 
@@ -30,11 +48,11 @@ def test_halt() -> None:
     assert data_bytes == test_bytes
 
     # use function
-    arb_id, data_bytes = protocol.pack_message(msg, 1)
+    arb_id, data_bytes = canp.encode_message(msg, 1)
     assert data_bytes == test_bytes
 
     # convert back
-    msg2 = protocol.HaltMessage(*struct.unpack(byte_def, test_bytes))
+    msg2 = canp.HaltMessage(*struct.unpack(byte_def, test_bytes))
 
     assert msg == msg2
 
@@ -42,7 +60,7 @@ def test_halt() -> None:
 def test_heartbeat() -> None:
     test_bytes = b"\x01\x02\x03\xbe\xef\xff"
 
-    msg = protocol.HeartbeatMessage(1, 2, 3, 0xBE, 0xEF, 0xFF)
+    msg = canp.HeartbeatMessage(1, 2, 3, 0xBE, 0xEF, 0xFF)
     assert msg.device_type == 1
     assert msg.error_max1 == 2
     assert msg.error_max2 == 3
@@ -50,7 +68,7 @@ def test_heartbeat() -> None:
     assert msg.device_state == 0xEF
     assert msg.counter == 0xFF
 
-    opcode, byte_def = protocol.get_opcode_and_bytedef(protocol.HeartbeatMessage)
+    opcode, byte_def = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)
     assert opcode == 1
     assert byte_def == "<BBBBBB"
 
@@ -58,24 +76,24 @@ def test_heartbeat() -> None:
     assert data_bytes == test_bytes
 
     # # convert back
-    msg2 = protocol.HeartbeatMessage(*struct.unpack(byte_def, test_bytes))
+    msg2 = canp.HeartbeatMessage(*struct.unpack(byte_def, test_bytes))
 
     assert msg == msg2
 
     # use function
-    _, data_bytes = protocol.pack_message(msg, 1)
+    _, data_bytes = canp.encode_message(msg, 1)
     assert data_bytes == test_bytes
 
 
 def test_pack_unpack() -> None:
     test_bytes = b"\x01\x02\x03\xbe\xef\xff"
 
-    msg = protocol.HeartbeatMessage(1, 2, 3, 0xBE, 0xEF, 0xFF)
+    msg = canp.HeartbeatMessage(1, 2, 3, 0xBE, 0xEF, 0xFF)
 
-    msg_id, data_bytes = protocol.pack_message(msg, 1)
+    msg_id, data_bytes = canp.encode_message(msg, 1)
 
     assert data_bytes == test_bytes
 
     # convert back
-    msg2 = protocol.parse_message(msg_id, data_bytes)
+    msg2 = canp.decode_message(msg_id, data_bytes)
     assert msg == msg2

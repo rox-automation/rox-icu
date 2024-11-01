@@ -38,7 +38,7 @@ class ICU:
         node_id: int,
         interface: str = "can0",
         interface_type: str = "socketcan",
-        state_change_callback: Optional[Callable[["ICU"], None]] = None,
+        on_dio_change: Optional[Callable[["ICU"], None]] = None,
     ) -> None:
         self._log = logging.getLogger(f"icu.{node_id}")
         self._node_id = node_id
@@ -60,9 +60,7 @@ class ICU:
         self.io_state: int = 0
 
         # Optional callback for IO state changes
-        self.io_state_callback: Optional[
-            Callable[["ICU"], None]
-        ] = state_change_callback
+        self.on_dio_change: Optional[Callable[["ICU"], None]] = on_dio_change
 
     @property
     def node_id(self) -> int:
@@ -76,14 +74,6 @@ class ICU:
 
         if time.time() - self._last_heartbeat_time > HEARTBEAT_TIMEOUT:
             raise HeartbeatError("Error: Heartbeat message timeout.")
-
-    def check_errors(self) -> None:
-        """Check if device is in error state and raise an exception if so"""
-        if self._last_heartbeat is None:
-            raise HeartbeatError("Error: No heartbeat message received.")
-
-        if self._last_heartbeat.error_flags != 0:
-            raise DeviceError(f"Device Error: {self._last_heartbeat.error_flags}")
 
     async def wait_for_heartbeat(self, timeout: float = 1.0) -> None:
         """Wait for heartbeat message"""
@@ -200,8 +190,8 @@ class ICU:
                     msg = canp.IOStateMessage(*data)
                     self.io_state = msg.io_state
 
-                    if self.io_state_callback is not None:
-                        self.io_state_callback(self)
+                    if self.on_dio_change is not None:
+                        self.on_dio_change(self)
 
             except asyncio.CancelledError:
                 break
