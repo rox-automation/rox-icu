@@ -20,12 +20,13 @@ for drv in [max1, max2]:
 
     # toggle outputs with D pins
 
-for pin in D_PINS:
-    print("toggling", pin)
-    pin.value = True
-    time.sleep(0.5)
-    pin.value = False
-
-
-# disable all outputs
-max_enable.value = False
+try:
+    while True:
+        for pin in D_PINS:
+            print("toggling", pin)
+            pin.value = True
+            time.sleep(0.5)
+            pin.value = False
+finally:
+    # disable all outputs
+    max_enable.value = False
