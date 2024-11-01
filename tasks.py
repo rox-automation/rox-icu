@@ -69,7 +69,7 @@ def sync(ctx):
     os.makedirs(destination, exist_ok=True)
 
     # Copy files with rsync, following symlinks
-    ctx.run(f"rsync -avL --exclude '_*' libraries/ {destination}/")
+    ctx.run(f"rsync -avL --exclude '_*' embedded_lib/ {destination}/")
 
     # Flush buffers
     ctx.run("sync")
