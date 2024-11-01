@@ -138,7 +138,7 @@ class Supervisor:
 
             try:
                 asyncio.run_coroutine_threadsafe(
-                    self._msg_queue.put((node_id, opcode, msg.data)), loop
+                    self._msg_queue.put((node_id, opcode, bytes(msg.data))), loop
                 )
             except RuntimeError:
                 # The event loop is closed, time to exit

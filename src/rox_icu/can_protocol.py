@@ -1,99 +1,72 @@
 #!/usr/bin/env python3
+# Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
-Simple CAN protocol for ROX devices.
+ROX CAN Protocol Implementation
 
-This module provides a lightweight implementation of a CAN protocol designed for ROX devices.
-It is compatible with both CPython and MicroPython, making it suitable for use in
-low-resource environments such as embedded systems.
+A lightweight CAN (Controller Area Network) protocol implementation for ROX devices,
+compatible with both CPython and MicroPython for embedded systems use.
 
-Protocol Definition
-===================
+Protocol Structure
+----------------
+Message ID (11 bits):
+    - Node ID: Upper 6 bits (0-63, node 0 reserved for broadcast)
+    - Command ID: Lower 5 bits (0-31)
 
-Message ID: 11 bits, containing opcode and node ID.
+Message Types
+------------
+HaltMessage:
+    Emergency halt command with IO state
+    Opcode: 0, Format: <B (uint8 io_state)
 
-* Upper 6 bits - Node ID - max 0x3F (63)
-* Lower 5 bits - Command ID - max 0x1F (31)
+HeartbeatMessage:
+    Periodic status update (100ms interval)
+    Opcode: 1, Format: <BBBBBB (device_type, error_max1, error_max2, io_state, device_state, counter)
 
-Node 0 is reserved for broadcast messages and CANopen NMT messages.
+IOStateMessage:
+    IO state change notification
+    Opcode: 2, Format: <B (uint8 io_state)
 
-Message Structure
-=================
-
-Messages are defined using namedtuples, providing a simple and memory-efficient
-structure for handling data. Each message type has an associated opcode and
-byte definition for serialization.
-
-Key Components:
-1. Message definitions (HeartbeatMessage, IOStateMessage)
-2. MESSAGES tuple containing message classes and their byte definitions
-3. Utility functions for message ID generation and parsing
+Usage Example
+-----------
+>>> # Create and encode a message
+>>> msg = HeartbeatMessage(device_type=1, error_max1=0, error_max2=0,
+...                       io_state=1, device_state=0, counter=0)
+>>> arb_id, data = encode_message(msg, node_id=1)
+>>>
+>>> # Decode received message
+>>> decoded_msg = decode_message(arb_id, data)
 
 Adding New Messages
-===================
+-----------------
+1. Define message structure using namedtuple
+2. Add entry to _MSG_DEFS with (opcode, byte_definition)
+3. Byte definition uses struct format chars (B=uint8, H=uint16, etc.)
 
-To add a new message type:
-1. Define a new namedtuple with the required fields
-2. Add the new message type to the MESSAGES tuple with its byte definition
-3. The opcode for the new message will be its index in the MESSAGES tuple
 
-Struct Types Summary
-====================
-
-The `struct` module is used for packing and unpacking binary data. Common format characters include:
-- 'B': unsigned char (1 byte)
-- 'H': unsigned short (2 bytes)
-- 'I': unsigned int (4 bytes)
-- 'b': signed char (1 byte)
-- 'h': signed short (2 bytes)
-- 'i': signed int (4 bytes)
-- 'f': float (4 bytes)
-- 'd': double (8 bytes)
-
-Use '<' for little-endian or '>' for big-endian byte order as required.
-
-Type Hinting
-============
-
-This module uses type hinting for improved code clarity and error detection.
-However, to maintain compatibility with MicroPython, which may not support the
-`typing` module, type hints are implemented using a try-except block to import
-the necessary types.
-
-Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 try:
-    from typing import NamedTuple, Tuple
-except ImportError:  # pragma: no cover
-    pass
+    from typing import TYPE_CHECKING
+except ImportError:
+    TYPE_CHECKING = False
 
+if TYPE_CHECKING:
+    from typing import Type, NamedTuple, Tuple
+
+import struct
 from collections import namedtuple
 
-VERSION = 7
+VERSION = 8
 
 
 class DeviceState:
     """Device state flags"""
 
-    RUNNING = 0
-    STOPPED = 1
+    STOPPED = 0
+    RUNNING = 1
 
 
-def generate_message_id(node_id: int, opcode: int) -> int:
-    """Generates an 11-bit message ID from opcode and node ID."""
-    return (node_id << 5) | opcode
-
-
-def split_message_id(message_id: int) -> Tuple[int, int]:
-    """Splits a 11-bit message ID into opcode and node ID."""
-
-    # same as odrive 3.6
-    opcode = message_id & 0x1F  # Extract lower 5 bits for cmd_id
-    node_id = message_id >> 5  # Shift right by 5 bits to get node_id
-
-    return node_id, opcode
-
-
+# ----------------------------Message Definitions----------------------------
 # opcode 0
 HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io state.
 
@@ -107,15 +80,63 @@ HeartbeatMessage = namedtuple(
 # opcode 2, sent on change or request
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
 
-# (message, byte_def) opcode is index
-MESSAGES = ((HaltMessage, "<B"), (HeartbeatMessage, "<BBBBBB"), (IOStateMessage, "<B"))
+# message: (opcode, byte_def)
+_MSG_DEFS = {
+    HaltMessage: (0, "<B"),
+    HeartbeatMessage: (1, "<BBBBBB"),
+    IOStateMessage: (2, "<B"),
+}
 
-OPCODE2MSG = {i: msg for i, (msg, _) in enumerate(MESSAGES)}
+_OPCODE2MSG = {v[0]: k for k, v in _MSG_DEFS.items()}
 
 
-def get_opcode_and_bytedef(message_class: NamedTuple) -> Tuple[int, str]:
+# ----------------------------Utility Functions----------------------------
+def generate_message_id(node_id: int, opcode: int) -> int:
+    """Generates an 11-bit message ID from opcode and node ID."""
+    return (node_id << 5) | opcode
+
+
+def split_message_id(message_id: int) -> "tuple[int, int]":
+    """Splits a 11-bit message ID into opcode and node ID."""
+    opcode = message_id & 0x1F  # Extract lower 5 bits for cmd_id
+    node_id = message_id >> 5  # Shift right by 5 bits to get node_id
+    return node_id, opcode
+
+
+def get_node_id(message_id: int) -> int:
+    """Get the node ID from a message ID."""
+    return message_id >> 5
+
+
+def get_opcode_and_bytedef(message_class: "Type[NamedTuple]") -> "Tuple[int, str]":
     """Get the opcode for a message type."""
-    for opcode, (msg_cls, byte_def) in enumerate(MESSAGES):
-        if message_class == msg_cls:
-            return opcode, byte_def
-    raise ValueError("Unknown message type")
+    return _MSG_DEFS[message_class]  # type: ignore
+
+
+def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
+    """Pack a message into arbitration ID and data bytes.
+    returns: (arbitration_id, data_bytes)"""
+    opcode, byte_def = get_opcode_and_bytedef(type(message))
+    arbitration_id = generate_message_id(node_id, opcode)
+    return arbitration_id, struct.pack(byte_def, *message)
+
+
+def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
+    """Parse a message from raw data."""
+    opcode = arb_id & 0x1F
+    message_class = _OPCODE2MSG[opcode]
+    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    # simple tests
+    print("ROX CAN Protocol v", VERSION)
+    node_id = 1
+
+    msg = HeartbeatMessage(1, 2, 3, 4, 5, 6)
+    print("Heartbeat message:", msg)
+
+    msg_id, data = encode_message(msg, node_id)
+    msg2 = decode_message(msg_id, data)
+
+    assert msg2 == msg

@@ -4,14 +4,14 @@ import pytest
 
 
 def test_version() -> None:
-    assert protocol.VERSION == 7
+    assert protocol.VERSION == 8
 
 
 def test_invalid_message() -> None:
     class InvalidMessage:
         pass
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         protocol.get_opcode_and_bytedef(InvalidMessage)
 
 
@@ -27,6 +27,10 @@ def test_halt() -> None:
 
     data_bytes = struct.pack(byte_def, *msg)
 
+    assert data_bytes == test_bytes
+
+    # use function
+    arb_id, data_bytes = protocol.pack_message(msg, 1)
     assert data_bytes == test_bytes
 
     # convert back
@@ -51,10 +55,27 @@ def test_heartbeat() -> None:
     assert byte_def == "<BBBBBB"
 
     data_bytes = struct.pack(byte_def, *msg)
-
     assert data_bytes == test_bytes
 
     # # convert back
     msg2 = protocol.HeartbeatMessage(*struct.unpack(byte_def, test_bytes))
 
+    assert msg == msg2
+
+    # use function
+    _, data_bytes = protocol.pack_message(msg, 1)
+    assert data_bytes == test_bytes
+
+
+def test_pack_unpack() -> None:
+    test_bytes = b"\x01\x02\x03\xbe\xef\xff"
+
+    msg = protocol.HeartbeatMessage(1, 2, 3, 0xBE, 0xEF, 0xFF)
+
+    msg_id, data_bytes = protocol.pack_message(msg, 1)
+
+    assert data_bytes == test_bytes
+
+    # convert back
+    msg2 = protocol.parse_message(msg_id, data_bytes)
     assert msg == msg2
