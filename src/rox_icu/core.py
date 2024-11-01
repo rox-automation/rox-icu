@@ -147,6 +147,8 @@ class ICU:
                         timeout_warned = True
                     continue
                 else:
+                    if timeout_warned:
+                        self._log.info("message flow restored")
                     timeout_warned = False
 
                 node_id, opcode = canp.split_message_id(msg.arbitration_id)
