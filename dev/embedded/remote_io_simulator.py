@@ -76,9 +76,10 @@ async def heartbeat_loop() -> None:
             error_max1=max1.get_global_error(),
             error_max2=max2.get_global_error(),
             io_state=get_io_state(),
-            device_state=0,
+            device_state=canp.DeviceState.RUNNING,
             counter=counter & 0xFF,
         )
+        # print(msg)
         can_msg = canio.Message(id=msg_id, data=struct.pack(byte_def, *msg))
         can.send(can_msg)
 

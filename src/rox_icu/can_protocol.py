@@ -62,8 +62,8 @@ VERSION = 8
 class DeviceState:
     """Device state flags"""
 
-    RUNNING = 0
-    STOPPED = 1
+    STOPPED = 0
+    RUNNING = 1
 
 
 # ----------------------------Message Definitions----------------------------
