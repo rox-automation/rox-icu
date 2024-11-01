@@ -6,13 +6,14 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-
+import os
 
 from rox_icu.core import ICU
 from rox_icu.utils import run_main
 
 
-INTERFACE = "slcan0"
+INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
+print(f"Using interface: {INTERFACE}")
 
 
 def state_change_callback(device: ICU) -> None:
