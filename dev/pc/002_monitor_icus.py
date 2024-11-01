@@ -17,7 +17,7 @@ print(f"Using interface: {INTERFACE}")
 
 
 def state_change_callback(device: ICU) -> None:
-    print(f"Node {device.node_id} IO state: {device.io_state:08b}")
+    print(f"Node {device.node_id} IO state: {device.io_state:#04x}")
 
 
 async def main():
