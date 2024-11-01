@@ -111,7 +111,7 @@ class ICUMockCAN:
                 error_max1=self.icumock.error_max1,
                 error_max2=self.icumock.error_max2,
                 io_state=self.icumock.get_io_state(),
-                device_state=0,
+                device_state=canp.DeviceState.RUNNING,
                 counter=counter,  # Increment counter for each loop
             )
 
@@ -127,11 +127,23 @@ class ICUMockCAN:
             counter &= 0xFF  # Wrap around at 255
             await asyncio.sleep(delay)
 
+    async def toggle_outputs(self):
+        """Toggle the output pins."""
+        self.log.info("Starting output toggling loop")
+
+        counter = 0
+        while True:
+            self.icumock.io_state = counter
+            await asyncio.sleep(0.1)
+            counter += 1
+            counter &= 0xFF  # Wrap around at 255
+
     async def main(self):
         """Main async loop for the ICU mock."""
         async with asyncio.TaskGroup() as tg:
             tg.create_task(self.heartbeat_loop())
             tg.create_task(self.message_handler())
+            tg.create_task(self.toggle_outputs())
 
     def start(self):
         """Start the main loop."""
