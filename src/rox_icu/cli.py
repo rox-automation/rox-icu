@@ -30,5 +30,17 @@ def mock(node_id, interface):
     run_main(lambda: main(node_id=node_id, interface=interface))
 
 
+@cli.command()
+@click.option("--interface", default="vcan0", help="CAN interface")
+def monitor(interface):
+    """Monitor multiple ICU devices"""
+    import curses
+    import rox_icu.monitor as monitor
+
+    monitor.INTERFACE = interface
+
+    curses.wrapper(monitor.main)
+
+
 if __name__ == "__main__":
     cli()  # pragma: no cover
