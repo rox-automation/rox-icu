@@ -1,5 +1,5 @@
 import time
-from invoke import task
+from invoke import task  # type: ignore
 import os
 from click import prompt
 
