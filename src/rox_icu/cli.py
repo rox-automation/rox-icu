@@ -24,7 +24,7 @@ def info() -> None:
 @click.option("--node-id", default=1, help="device ID")
 @click.option("--interface", default="vcan0", help="CAN interface")
 def mock(node_id, interface):
-    """Mock ODrive CAN interface"""
+    """Mock ICU device on CAN bus"""
     from .mock import main
 
     run_main(lambda: main(node_id=node_id, interface=interface))
@@ -33,7 +33,7 @@ def mock(node_id, interface):
 @cli.command()
 @click.option("--interface", default="vcan0", help="CAN interface")
 def monitor(interface):
-    """Monitor multiple ICU devices"""
+    """Monitor ICU devices on CAN bus"""
     import curses
     import rox_icu.monitor as monitor
 
