@@ -1,203 +1,223 @@
-from __future__ import annotations
+#!/usr/bin/env python3
+"""
+ICU CAN driver
+
+Copyright (c) 2024 ROX Automation
+"""
 
 import asyncio
-import time
 import logging
 import threading
-from typing import Optional, Tuple
+import time
+from typing import Callable, Optional
 
 import can
-import can_protocol as protocol
 
-MESSAGE_TIMEOUT: float = 1.0  # message expiration time & can timeout
-ICU_DEVICE_TYPE: int = 0x01
+from rox_icu import can_protocol as canp
+from rox_icu.utils import run_main
 
 
-class DeviceDead(Exception):
+# message timeout in seconds
+MESSAGE_TIMEOUT = 1.0  # message expiration time & can timeout
+HEARTBEAT_TIMEOUT = 0.5  # heartbeat specific timeout
+
+
+class DeviceError(Exception):
+    """ICU device error"""
+
+
+class HeartbeatError(Exception):
     """No heartbeat error"""
 
 
-class Timer:
-    """Timer class, including timeout"""
-
-    def __init__(self, timeout: float) -> None:
-        self.timeout: float = timeout
-        self.start_time: float = time.time()
-
-    def is_timeout(self) -> bool:
-        """Check if timeout has expired"""
-        return time.time() - self.start_time > self.timeout
-
-    def reset(self) -> None:
-        """Reset timer"""
-        self.start_time = time.time()
-
-    def elapsed(self) -> float:
-        """Return elapsed time since timer was started"""
-        return time.time() - self.start_time
-
-
 class ICU:
-    """ICU device"""
-
-    def __init__(self, node_id: int) -> None:
-        self.node_id: int = node_id
-        self.io_state: int = 0
-        self._heartbeat_msg: Optional[protocol.HeartbeatMessage] = None
-        self._hb_timer: Timer = Timer(timeout=0.5)
-        self._log = logging.getLogger(f"ICU_{node_id}")
-
-    def process_message(self, opcode: int, data: bytes) -> None:
-        """Process incoming message"""
-        match opcode:
-            case 1:
-                self._heartbeat_msg = protocol.HeartbeatMessage(*data)
-                self._log.debug(self._heartbeat_msg)
-                self.io_state = self._heartbeat_msg.io_state
-                self._hb_timer.reset()
-            case 2:
-                msg = protocol.IOStateMessage(*data)
-                self.io_state = msg.io_state
-            case _:
-                pass
-
-    def is_alive(self) -> bool:
-        """Check if device is alive"""
-        if self._heartbeat_msg is None:
-            return False
-
-        if self._hb_timer.is_timeout():
-            self._log.error("Device dead")
-            return False
-
-        return True
-
-    def __repr__(self) -> str:
-        return f"<ICU {self.node_id} io_state={self.io_state}>"
-
-
-class Supervisor:
-    """listens to can messages and manages devices"""
+    """ICU CAN driver"""
 
     def __init__(
-        self, interface: str = "can0", interface_type: str = "socketcan"
+        self,
+        node_id: int,
+        interface: str = "can0",
+        interface_type: str = "socketcan",
+        on_dio_change: Optional[Callable[["ICU"], None]] = None,
     ) -> None:
-        self.devices: dict[int, ICU] = {}
-        self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
-        self._bus: can.BusABC = can.interface.Bus(
-            channel=interface, interface=interface_type
-        )
-        self._recieve_thread: Optional[threading.Thread] = None
-        self._msg_queue: asyncio.Queue[Tuple[int, int, bytes]] = asyncio.Queue()
-        self._running: threading.Event = threading.Event()
-        self._msg_task: Optional[asyncio.Task[None]] = None
+        self._log = logging.getLogger(f"icu.{node_id}")
+        self._node_id = node_id
+
+        self._bus = can.interface.Bus(channel=interface, interface=interface_type)
+
+        self._receive_thread: Optional[threading.Thread] = None
+        self._msg_task: Optional[asyncio.Task] = None
+        self._msg_queue: asyncio.Queue = asyncio.Queue()
+
+        self._last_heartbeat: Optional[canp.HeartbeatMessage] = None
+        self._last_heartbeat_time: float = 0
+        self._heartbeat_event = asyncio.Event()
+
+        self._ignored_messages: set = set()
+        self._running = True
+
+        # Public state
+        self.io_state: int = 0
+
+        # Optional callback for IO state changes
+        self.on_dio_change: Optional[Callable[["ICU"], None]] = on_dio_change
+
+    @property
+    def node_id(self) -> int:
+        """Node ID"""
+        return self._node_id
+
+    def check_alive(self) -> None:
+        """Check if device is alive, raise an exception if not"""
+        if self._last_heartbeat is None:
+            raise HeartbeatError("Error: No heartbeat message received.")
+
+        if time.time() - self._last_heartbeat_time > HEARTBEAT_TIMEOUT:
+            raise HeartbeatError("Error: Heartbeat message timeout.")
+
+    async def wait_for_heartbeat(self, timeout: float = 1.0) -> None:
+        """Wait for heartbeat message"""
+        self._heartbeat_event.clear()
+        self._log.debug("waiting for heartbeat")
+        try:
+            await asyncio.wait_for(self._heartbeat_event.wait(), timeout)
+        except asyncio.TimeoutError as e:
+            raise HeartbeatError("Timeout waiting for heartbeat") from e
 
     async def start(self) -> None:
-        """start driver"""
-        self._log.info("Starting...")
-        self._running.set()
+        """Start driver"""
+        self._log.info(
+            f"Starting. node_id={self._node_id}, bus={self._bus.channel_info}"
+        )
 
-        loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
-        self._recieve_thread = threading.Thread(
+        loop = asyncio.get_running_loop()
+        self._receive_thread = threading.Thread(
             target=self._can_reader_thread, args=(loop,), daemon=True
         )
-        self._recieve_thread.start()
+        self._receive_thread.start()
 
         self._msg_task = asyncio.create_task(self._message_handler())
 
+        # Wait for first heartbeat
+        self._log.info("waiting for first heartbeat")
+        await self.wait_for_heartbeat()
+
         self._log.info("started")
 
-    def stop(self) -> None:
-        """stop driver"""
+    async def stop(self) -> None:
+        """Stop driver"""
         self._log.info("stopping driver")
-        self._running.clear()
+        self._running = False
 
         if self._msg_task is not None:
             self._msg_task.cancel()
+            try:
+                await self._msg_task
+            except asyncio.CancelledError:
+                pass
 
-        if self._recieve_thread is not None:
-            self._recieve_thread.join()
+        if self._receive_thread is not None:
+            self._receive_thread.join(timeout=1.0)
 
-        self._log.info("driver stopped")
+        if hasattr(self, "_bus"):
+            self._bus.shutdown()
+
+        self._log.info("stopped")
 
     def _can_reader_thread(self, loop: asyncio.AbstractEventLoop) -> None:
-        """receive can messages, filter and put them into the queue"""
-        while self._running.is_set():
-            msg: Optional[can.Message] = self._bus.recv(MESSAGE_TIMEOUT)
-            if not msg:
-                self._log.warning("can timeout")
-                continue
+        """Receive CAN messages, filter and put them into the queue"""
+        timeout_warned = False
 
-            if msg.is_remote_frame:
-                self._log.warning("RTR message received")
-                continue
-
-            node_id, opcode = protocol.split_message_id(msg.arbitration_id)
-
-            self._log.debug(f"< {node_id=} {opcode=} {msg.data=}")
-
+        while self._running:
             try:
-                asyncio.run_coroutine_threadsafe(
-                    self._msg_queue.put((node_id, opcode, bytes(msg.data))), loop
-                )
-            except RuntimeError:
-                # The event loop is closed, time to exit
+                msg = self._bus.recv(MESSAGE_TIMEOUT)
+                if not msg:
+                    if not timeout_warned:
+                        self._log.warning("can timeout")
+                        timeout_warned = True
+                    continue
+                else:
+                    if timeout_warned:
+                        self._log.info("message flow restored")
+                    timeout_warned = False
+
+                node_id, opcode = canp.split_message_id(msg.arbitration_id)
+
+                # Ignore messages that aren't for this node
+                if node_id != self._node_id:
+                    continue
+
+                # Ignore messages that were requested to be ignored
+                if opcode in self._ignored_messages:
+                    continue
+
+                # RTR messages are requests for data
+                if msg.is_remote_frame:
+                    self._log.warning("RTR message received")
+                    continue
+
+                self._log.debug(f"< {node_id=} {opcode=}")
+
+                if self._running:  # Check again before queueing
+                    asyncio.run_coroutine_threadsafe(
+                        self._msg_queue.put((msg.arbitration_id, bytes(msg.data))), loop
+                    )
+
+            except Exception as e:
+                if self._running:  # Only log if we're still meant to be running
+                    self._log.error(f"Error in CAN reader thread: {e}")
                 break
 
         self._log.debug("CAN reader thread stopped")
 
     async def _message_handler(self) -> None:
-        """handle received message"""
-        await asyncio.sleep(0.1)  # wait for the queue to be ready
-
-        while self._running.is_set():
+        """Handle received messages"""
+        while self._running:
             try:
-                node_id, opcode, data = await asyncio.wait_for(
-                    self._msg_queue.get(), timeout=0.1
-                )
+                arb_id, data = await self._msg_queue.get()
                 self._msg_queue.task_done()
 
-                if opcode == 1:
-                    if len(data) != 6:
-                        self._log.debug("Invalid heartbeat message length")
-                        continue
+                msg = canp.decode_message(arb_id, data)
 
-                    if node_id not in self.devices:
-                        self.devices[node_id] = ICU(node_id)
+                if isinstance(msg, canp.HeartbeatMessage):
+                    self._last_heartbeat = msg
+                    self._last_heartbeat_time = time.time()
+                    self.io_state = self._last_heartbeat.io_state
+                    self._heartbeat_event.set()
+                    self._log.debug(f"heartbeat: {self._last_heartbeat}")
 
-                if node_id in self.devices:
-                    self.devices[node_id].process_message(opcode, data)
+                elif isinstance(msg, canp.IOStateMessage):
+                    msg = canp.IOStateMessage(*data)
+                    self.io_state = msg.io_state
 
-            except asyncio.TimeoutError:
-                # This allows the loop to check the running flag periodically
-                continue
+                    if self.on_dio_change is not None:
+                        self.on_dio_change(self)
 
-        self._log.debug("message handler stopped")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self._log.error(f"Error processing message: {e}")
 
-    def close(self) -> None:
-        """Close the CAN bus"""
-        if hasattr(self, "_bus"):
-            self._bus.shutdown()
+        self._log.debug("Message handler stopped")
 
-    def __enter__(self) -> Supervisor:
-        return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore
-        self.stop()
-        self.close()
+async def _demo(icu: ICU) -> None:
+    """Run ICU with proper startup and shutdown handling"""
+    try:
+        await icu.start()
+        while True:
+            await asyncio.sleep(1)
+            logging.info(f"IO State: {icu.io_state:08b}")
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logging.info("Shutdown requested")
+    finally:
+        await icu.stop()
 
 
 if __name__ == "__main__":
-    import coloredlogs
-    from rox_icu.utils import LOG_FORMAT, TIME_FORMAT
-
-    coloredlogs.install(level="DEBUG", fmt=LOG_FORMAT, datefmt=TIME_FORMAT)
 
     async def main() -> None:
-        with Supervisor(interface="slcan0") as supervisor:
-            await supervisor.start()
-            await asyncio.sleep(1)
-        print("Devices:")
-        print(supervisor.devices)
+        icu = ICU(node_id=1, interface="slcan0")
+        await _demo(icu)
 
-    asyncio.run(main())
+    run_main(main())

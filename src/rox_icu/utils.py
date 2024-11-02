@@ -32,7 +32,7 @@ def setup_logging() -> None:
     logging.info(f"Log level set to {loglevel}")
 
 
-def run_main(func: MainFunction[T]) -> T:
+def run_main(func: MainFunction[T], trace_on_exc=False) -> T | None:
     """
     Convenience function to run either an async coroutine or a regular callable.
 
@@ -58,5 +58,5 @@ def run_main(func: MainFunction[T]) -> T:
         logging.info("Process interrupted by user")
         return cast(T, None)
     except Exception as e:
-        logging.error(e)
-        raise
+        logging.error(e, exc_info=trace_on_exc)
+        return cast(T, None)

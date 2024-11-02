@@ -134,6 +134,18 @@ class ICUMockCAN:
         counter = 0
         while True:
             self.icumock.io_state = counter
+            # send message
+            arb_id, data_bytes = canp.encode_message(
+                canp.IOStateMessage(self.icumock.io_state), self.node_id
+            )
+
+            message = can.Message(
+                arbitration_id=arb_id,
+                data=data_bytes,
+                is_extended_id=False,
+            )
+            self.bus.send(message)
+
             await asyncio.sleep(0.1)
             counter += 1
             counter &= 0xFF  # Wrap around at 255
