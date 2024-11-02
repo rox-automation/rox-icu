@@ -14,7 +14,6 @@ import struct
 import signal
 from dataclasses import dataclass
 from rox_icu import can_protocol as canp
-from rox_icu.utils import run_main
 
 INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
 
@@ -51,7 +50,7 @@ class Device:
         )
 
 
-def handle_msg(msg: can.Message):
+def handle_msg(msg: can.Message) -> None:
     # check if the message is a heartbeat
     node_id, opcode = canp.split_message_id(msg.arbitration_id)
 
@@ -69,16 +68,16 @@ def handle_msg(msg: can.Message):
                 devices[node_id] = Device(node_id, is_icu=False)
 
 
-def signal_handler(signum, frame):
+def signal_handler(signum, frame) -> None:
     """Handle keyboard interrupt"""
     global should_exit
     should_exit = True
 
 
 def draw_table(pad: curses.window, screen: curses.window) -> None:
-    """Draw the table using a pad for smooth scrolling"""
+    """Draw the table using a pad"""
     height, width = screen.getmaxyx()
-    pad.clear()
+    pad.erase()
 
     # Draw header
     header = "| {:<6} | {:<10} | {:<9} | {:<9} | {:<10} | {:<11} | {:<7} |".format(
@@ -115,14 +114,11 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
     visible_rows = height - 1
     visible_cols = width - 1
 
-    # Ensure we don't try to show more than we have
-    # pad_height = max(len(devices) + 3, height)  # +3 for header and separator
-
     # Copy the pad contents to the screen
     pad.refresh(0, 0, 0, 0, visible_rows, visible_cols)
 
 
-def main(stdscr: curses.window):
+def main(stdscr: curses.window) -> None:
     # Set up curses
     curses.curs_set(0)  # Hide the cursor
     curses.use_default_colors()  # Use terminal's default colors
@@ -137,16 +133,15 @@ def main(stdscr: curses.window):
     try:
         with can.Bus(channel=INTERFACE, bustype="socketcan") as bus:
             while not should_exit:
-                # Check for messages with a small timeout
+                # Check for messages
                 msg = bus.recv(timeout=0.1)  # 100ms timeout
                 if msg is not None:
                     handle_msg(msg)
 
-                # Update display using the pad
+                # Update display
                 draw_table(pad, stdscr)
 
     except Exception as e:
-        # Clean up curses before printing the error
         curses.endwin()
         print(f"Error: {e}")
 
@@ -156,5 +151,3 @@ if __name__ == "__main__":
         curses.wrapper(main)
     except KeyboardInterrupt:
         print("\nExiting gracefully...")
-    except Exception:
-        run_main(lambda: print("An error occurred"), trace_on_exc=True)
