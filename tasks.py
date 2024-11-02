@@ -1,3 +1,4 @@
+import time
 from invoke import task
 import os
 from click import prompt
@@ -63,7 +64,7 @@ def sync(ctx):
     mount_point = get_mount_point()
 
     # Directory where the lib files will be copied
-    destination = os.path.join(mount_point, "lib")
+    destination = os.path.join(mount_point, "lib")  # type: ignore
 
     # Ensure the destination directory exists
     os.makedirs(destination, exist_ok=True)
@@ -84,3 +85,19 @@ def init(ctx):
     ctx.run(f"cp examples/101_hello_icu.py {mount_point}/code.py")
 
     # Flush
+
+
+@task
+def ci(ctx):
+    """
+    run ci locally in a fresh container
+
+    """
+    t_start = time.time()
+    # get script directory
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    try:
+        ctx.run(f"docker run --rm -v {script_dir}:/workspace roxauto/python-ci")
+    finally:
+        t_end = time.time()
+        print(f"CI run took {t_end - t_start:.1f} seconds")
