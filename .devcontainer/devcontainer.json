@@ -1,6 +1,5 @@
 {
   "initializeCommand": "mkdir -p /var/tmp/container-extensions", // executed on HOST system
-
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
@@ -8,20 +7,19 @@
       "USER_GID": "${localEnv:USER_GID}"
     }
   },
-  "runArgs": ["--network", "host", "--privileged"],
-
+  "runArgs": [
+    "--network",
+    "host",
+    "--privileged"
+  ],
   "mounts": [
     "source=/var/tmp/container-extensions,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
   ],
   "postCreateCommand": ".devcontainer/init_container.sh",
-
-    // add workspace to pythonpath
+  // add workspace to pythonpath
   "containerEnv": {
-      "PYTHONPATH": "${containerWorkspaceFolder}/libraries"
-    },
-
-
-
+    "PYTHONPATH": "${containerWorkspaceFolder}/libraries"
+  },
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
@@ -34,7 +32,8 @@
         "doi.fileheadercomment",
         "donjayamanne.githistory",
         "charliermarsh.ruff",
-        "ms-python.mypy-type-checker"
+        "ms-python.mypy-type-checker",
+        "tamasfe.even-better-toml"
       ]
     }
   }
