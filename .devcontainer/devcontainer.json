@@ -33,7 +33,8 @@
         "mhutchie.git-graph",
         "doi.fileheadercomment",
         "donjayamanne.githistory",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker"
       ]
     }
   }
