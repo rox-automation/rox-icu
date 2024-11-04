@@ -34,6 +34,7 @@ for pin in D_PINS:
 
 def get_io_state() -> int:
     io_state = 0
+    # NOTE: a more efficient way to do this would be reading all pins at once from MAX registers.
     for bit, pin in enumerate(D_PINS):
         io_state |= pin.value << bit
     return io_state
