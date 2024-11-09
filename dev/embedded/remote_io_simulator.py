@@ -18,6 +18,7 @@ NODE_ID = const(0x01)
 
 # -------------- initialisation ----------------
 print("----------Remote IO sumulator-------------")
+print(f"Node ID: {NODE_ID}")
 print(f"Can protocol version: {canp.VERSION}")
 
 # intialize system
@@ -89,7 +90,21 @@ async def heartbeat_loop() -> None:
 
         counter += 1
 
+        print(".", end="")
+
         await asyncio.sleep(0.1)
+
+
+async def receive_can_message() -> None:
+    listener = can.listen(timeout=0)
+    while True:
+        message = listener.receive()
+        if message:
+            print(f"Received message: {message.data.hex(' ')}")
+        await asyncio.sleep(0)  # Yield control to other tasks
+
+
+# -------------------test function --------------------------------
 
 
 async def toggle_outputs() -> None:
@@ -101,8 +116,13 @@ async def toggle_outputs() -> None:
             pin.value = False
 
 
+# ---------------------main---------------------------------------------
+
+
 async def main() -> None:
-    await asyncio.gather(read_inputs(), heartbeat_loop(), toggle_outputs())
+    await asyncio.gather(
+        read_inputs(), heartbeat_loop(), toggle_outputs(), receive_can_message()
+    )
 
 
 asyncio.run(main())
