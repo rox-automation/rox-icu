@@ -17,6 +17,7 @@ NODE_ID = const(0x01)
 
 
 # -------------- initialisation ----------------
+print("----------Remote IO sumulator-------------")
 print(f"Can protocol version: {canp.VERSION}")
 
 # intialize system
