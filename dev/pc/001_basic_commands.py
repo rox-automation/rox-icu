@@ -8,12 +8,16 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
+import os
 import can
 import logging
 from rox_icu.utils import run_main
 import rox_icu.can_protocol as canp
 
 NODE_ID = 0x01
+
+INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
+print(f"Using interface: {INTERFACE}")
 
 log = logging.getLogger("master")
 
@@ -69,7 +73,7 @@ async def receive_messages(reader):
 async def main():
     # Start the sending and receiving coroutines
     bus = can.interface.Bus(
-        channel="vcan0", interface="socketcan", receive_own_messages=True
+        channel=INTERFACE, interface="socketcan", receive_own_messages=True
     )
 
     reader = can.AsyncBufferedReader()
