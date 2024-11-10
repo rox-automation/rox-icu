@@ -33,18 +33,20 @@ class ICUMock:
 
     def __init__(self, logger: Optional[logging.Logger] = None):
         self.log = logger or logging.getLogger("icu_mock")
-        self.io_state = 0  # Represents the state of all I/Os (8 bits for 8 I/Os)
+        self._io_state = 0  # Represents the state of all I/Os (8 bits for 8 I/Os)
         self.error_max1 = 0
         self.error_max2 = 0
 
-    def get_io_state(self) -> int:
-        """Return the current IO state."""
-        return self.io_state
+    @property
+    def io_state(self):
+        """Get the IO state."""
+        return self._io_state
 
-    def update_io_state(self, new_state: int):
-        """Update the IO state."""
-        self.io_state = new_state
-        self.log.info(f"Updated IO state: {bin(self.io_state)}")
+    @io_state.setter
+    def io_state(self, new_state: int):
+        """Set the IO state."""
+        self.log.info(f"Setting IO state: {new_state:02x}")
+        self._io_state = new_state
 
     def get_global_error(self):
         """Return the error status of max1 and max2."""
@@ -92,6 +94,9 @@ class ICUMockCAN:
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
                 self._log.info(f"Received message: {msg}")
 
+                if isinstance(msg, canp.IOStateMessage):
+                    self.icumock.io_state = msg.io_state
+
             except Exception as e:
                 self._log.error(f"Error in message handler: {e}")
 
@@ -110,7 +115,7 @@ class ICUMockCAN:
                 device_type=1,
                 error_max1=self.icumock.error_max1,
                 error_max2=self.icumock.error_max2,
-                io_state=self.icumock.get_io_state(),
+                io_state=self.icumock.io_state,
                 errors=0,
                 counter=counter,  # Increment counter for each loop
             )
@@ -131,9 +136,10 @@ class ICUMockCAN:
         """Toggle the output pins."""
         self._log.info("Starting output toggling loop")
 
-        counter = 0
         while True:
-            self.icumock.io_state = counter
+
+            # toggle bit 7
+            self.icumock.io_state ^= 0x80
             # send message
             arb_id, data_bytes = canp.encode_message(
                 canp.IOStateMessage(self.icumock.io_state), self.node_id
@@ -146,9 +152,7 @@ class ICUMockCAN:
             )
             self._bus.send(message)
 
-            await asyncio.sleep(0.1)
-            counter += 1
-            counter &= 0xFF  # Wrap around at 255
+            await asyncio.sleep(0.5)
 
     async def main(self):
         """Main async loop for the ICU mock."""
