@@ -32,10 +32,11 @@
         "mhutchie.git-graph",
         "doi.fileheadercomment",
         "donjayamanne.githistory",
-        "charliermarsh.ruff",
         "ms-python.mypy-type-checker",
         "tamasfe.even-better-toml",
-        "GitHub.copilot"
+        "GitHub.copilot",
+        "ms-python.pylint",
+        "ms-python.black-formatter"
       ]
     }
   }

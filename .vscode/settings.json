@@ -14,8 +14,8 @@
 
     "[python]": {
       "editor.formatOnSave": true,
-      "editor.defaultFormatter": "charliermarsh.ruff",
-      "editor.defaultFoldingRangeProvider": "charliermarsh.ruff"
+      // "editor.defaultFormatter": "charliermarsh.ruff",
+      // "editor.defaultFoldingRangeProvider": "charliermarsh.ruff"
     },
     "yaml.customTags": [
       "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
@@ -25,5 +25,6 @@
         "company": "ROX Automation",
         "pybang": "#!/usr/bin/env python3"
       }
-    }
+    },
+    "python.defaultInterpreterPath": "/usr/local/bin/python",
   }
