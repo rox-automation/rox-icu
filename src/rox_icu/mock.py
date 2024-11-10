@@ -111,7 +111,7 @@ class ICUMockCAN:
                 error_max1=self.icumock.error_max1,
                 error_max2=self.icumock.error_max2,
                 io_state=self.icumock.get_io_state(),
-                device_state=canp.DeviceState.RUNNING,
+                errors=0,
                 counter=counter,  # Increment counter for each loop
             )
 
