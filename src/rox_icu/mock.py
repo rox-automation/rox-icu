@@ -60,24 +60,24 @@ class ICUMockCAN:
         channel: str = "vcan0",
         interface: str = "socketcan",
     ):
-        self.log = logging.getLogger(f"icu.mock.{node_id}")
+        self._log = logging.getLogger(f"icu.mock.{node_id}")
         self.node_id = node_id
-        self.channel = channel
-        self.interface = interface
-        self.icumock = ICUMock(logger=self.log)
+        self._channel = channel
+        self._interface = interface
+        self.icumock = ICUMock(logger=self._log)
 
-        self.log.info(f"Starting mock {node_id=} , {channel=} , {interface=}")
-        self.bus = can.interface.Bus(channel=channel, interface=interface)
-        self.can_reader = can.AsyncBufferedReader()
-        self.notifier = can.Notifier(self.bus, [self.can_reader])
+        self._log.info(f"Starting mock {node_id=} , {channel=} , {interface=}")
+        self._bus = can.interface.Bus(channel=channel, interface=interface)
+        self._can_reader = can.AsyncBufferedReader()
+        self._notifier = can.Notifier(self._bus, [self._can_reader])
 
     async def message_handler(self):
         """Handle received CAN messages."""
-        self.log.info("Starting message handler")
+        self._log.info("Starting message handler")
 
         while True:
             try:
-                raw_msg = await self.can_reader.get_message()
+                raw_msg = await self._can_reader.get_message()
 
                 node_id = canp.get_node_id(raw_msg.arbitration_id)
 
@@ -85,19 +85,19 @@ class ICUMockCAN:
                 if node_id != self.node_id:
                     continue
 
-                self.log.debug(
+                self._log.debug(
                     f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(" ")}"
                 )
 
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
-                self.log.info(f"Received message: {msg}")
+                self._log.info(f"Received message: {msg}")
 
             except Exception as e:
-                self.log.error(f"Error in message handler: {e}")
+                self._log.error(f"Error in message handler: {e}")
 
     async def heartbeat_loop(self, delay: float = 0.1):
         """Send heartbeat message."""
-        self.log.info("Starting heartbeat loop")
+        self._log.info("Starting heartbeat loop")
 
         counter = 0
 
@@ -122,14 +122,14 @@ class ICUMockCAN:
                 data=data_bytes,
                 is_extended_id=False,
             )
-            self.bus.send(message)
+            self._bus.send(message)
             counter += 1
             counter &= 0xFF  # Wrap around at 255
             await asyncio.sleep(delay)
 
     async def toggle_outputs(self):
         """Toggle the output pins."""
-        self.log.info("Starting output toggling loop")
+        self._log.info("Starting output toggling loop")
 
         counter = 0
         while True:
@@ -144,7 +144,7 @@ class ICUMockCAN:
                 data=data_bytes,
                 is_extended_id=False,
             )
-            self.bus.send(message)
+            self._bus.send(message)
 
             await asyncio.sleep(0.1)
             counter += 1
@@ -163,8 +163,8 @@ class ICUMockCAN:
 
     def __del__(self):
         """Destructor to clean up resources."""
-        self.notifier.stop()
-        self.bus.shutdown()
+        self._notifier.stop()
+        self._bus.shutdown()
 
 
 def main(node_id: int = NODE_ID, interface: str = "vcan0"):
