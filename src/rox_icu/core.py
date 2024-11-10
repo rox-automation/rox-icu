@@ -14,7 +14,7 @@ from typing import Callable, Optional
 import can
 
 from rox_icu import can_protocol as canp
-from rox_icu.utils import run_main
+from rox_icu.utils import run_main_async
 
 
 # message timeout in seconds
@@ -220,4 +220,4 @@ if __name__ == "__main__":
         icu = ICU(node_id=1, interface="slcan0")
         await _demo(icu)
 
-    run_main(main())
+    run_main_async(main())
