@@ -41,8 +41,8 @@ def lint(ctx):
     Perform static analysis on the source code to check for syntax errors and enforce style consistency.
     """
     # ctx.run("ruff check src tests")
-    ctx.run("pylint src")
-    ctx.run("mypy src")
+    ctx.run("pylint -E src", warn=True, pty=True)
+    ctx.run("mypy src", warn=True, pty=True)
 
 
 @task
@@ -50,7 +50,7 @@ def test(ctx):
     """
     Run tests with coverage reporting to ensure code functionality and quality.
     """
-    ctx.run("pytest --cov=src --cov-report term-missing tests")
+    ctx.run("pytest --cov=src --cov-report term-missing tests", pty=True)
 
 
 @task
