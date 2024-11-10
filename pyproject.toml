@@ -89,3 +89,8 @@ reportMissingModuleSource = false
 reportMissingImports = false
 reportAttributeAccessIssue = false
 reportPossiblyUnboundVariable = false
+
+
+# -----------------ruff configuration----------------
+[tool.ruff]
+target-version = "py311"
