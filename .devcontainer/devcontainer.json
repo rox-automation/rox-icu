@@ -1,5 +1,5 @@
 {
-  "initializeCommand": "mkdir -p /var/tmp/container-extensions", // executed on HOST system
+  "initializeCommand": "mkdir -p /var/tmp/container-extensions-icu", // executed on HOST system
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
@@ -13,12 +13,13 @@
     "--privileged"
   ],
   "mounts": [
-    "source=/var/tmp/container-extensions,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
+    "source=/var/tmp/container-extensions-icu,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
   ],
   "postCreateCommand": ".devcontainer/init_container.sh",
-  // add workspace to pythonpath
+  // set env variables
   "containerEnv": {
-    "PYTHONPATH": "${containerWorkspaceFolder}/libraries"
+    "PYTHONPATH": "${containerWorkspaceFolder}/embedded_lib",
+    "ICU_INTERFACE": "vcan0"
   },
   // Configure tool-specific properties.
   "customizations": {
@@ -33,7 +34,8 @@
         "donjayamanne.githistory",
         "charliermarsh.ruff",
         "ms-python.mypy-type-checker",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "GitHub.copilot"
       ]
     }
   }
