@@ -7,11 +7,13 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 import struct
-import canio
-from icu_board import led1, can, max1, max2, max_enable, D_PINS
-from micropython import const
-import can_protocol as canp
+import time
+import gc
 
+import can_protocol as canp
+import canio
+from icu_board import D_PINS, can, led1, max1, max2, max_enable
+from micropython import const
 
 NODE_ID = const(0x01)
 
@@ -36,7 +38,7 @@ for pin in D_PINS:
 
 def get_io_state() -> int:
     io_state = 0
-    # NOTE: a more efficient way to do this would be reading all pins at once from MAX registers.
+
     for bit, pin in enumerate(D_PINS):
         io_state |= pin.value << bit
     return io_state
@@ -52,6 +54,12 @@ async def read_inputs() -> None:
     msg_id = canp.generate_message_id(NODE_ID, opcode)
     print(f"IOStateMessage ID: {msg_id:x}")
 
+    # Timing variables
+    loop_count = 0
+    max_loop_time = 0.0
+    total_loop_time = 0.0
+    loop_start = time.monotonic_ns()
+
     while True:
         # get state of all pins
         io_state = get_io_state()
@@ -62,6 +70,27 @@ async def read_inputs() -> None:
 
         prev_io_state = io_state
 
+        # Calculate loop time in milliseconds
+        loop_time = (time.monotonic_ns() - loop_start) / 1_000_000  # Convert ns to ms
+
+        # Update statistics
+        max_loop_time = max(max_loop_time, loop_time)
+        total_loop_time += loop_time
+        loop_count += 1
+
+        # Print statistics every 100 loops
+        if loop_count % 100 == 0:
+            avg_loop_time = total_loop_time / 100
+            print(
+                f"Loop timing - Avg: {avg_loop_time:.3f}ms, Max: {max_loop_time:.3f}ms"
+            )
+            # Reset statistics
+            max_loop_time = 0.0
+            total_loop_time = 0.0
+
+        gc.collect()
+
+        loop_start = time.monotonic_ns()
         await asyncio.sleep(0)
 
 
@@ -90,7 +119,7 @@ async def heartbeat_loop() -> None:
 
         counter += 1
 
-        print(".", end="")
+        # print(".", end="")
 
         await asyncio.sleep(0.1)
 
@@ -98,9 +127,10 @@ async def heartbeat_loop() -> None:
 async def receive_can_message() -> None:
     listener = can.listen(timeout=0)
     while True:
-        message = listener.receive()
-        if message:
-            print(f"Received message: {message.data.hex(' ')}")
+        if listener.in_waiting():
+            message = listener.receive()
+            if message:
+                print(f"Received message: {message.data.hex(' ')}")
         await asyncio.sleep(0)  # Yield control to other tasks
 
 
