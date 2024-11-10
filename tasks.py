@@ -1,12 +1,13 @@
-import time
-from invoke import task  # type: ignore
 import os
+import time
+
 from click import prompt
+from invoke import task  # type: ignore
 
 
 def get_mount_point():
     mount_point = None
-    for root, dirs, files in os.walk("/media"):
+    for root, dirs, _ in os.walk("/media"):
         if "CIRCUITPY" in dirs:
             mount_point = os.path.join(root, "CIRCUITPY")
             print(f"CIRCUITPY mount point found: {mount_point}")
