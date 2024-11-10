@@ -16,7 +16,7 @@ from icu_board import D_PINS, can, led1, max1, max2, max_enable
 from micropython import const
 
 NODE_ID = const(0x01)
-
+device_errors = 0
 
 # -------------- initialisation ----------------
 print("----------Remote IO sumulator-------------")
@@ -46,6 +46,8 @@ def get_io_state() -> int:
 
 async def read_inputs() -> None:
     """read inputs and send can message on change"""
+
+    global device_errors
 
     io_state = get_io_state()
     prev_io_state = io_state
@@ -84,6 +86,12 @@ async def read_inputs() -> None:
             print(
                 f"Loop timing - Avg: {avg_loop_time:.3f}ms, Max: {max_loop_time:.3f}ms"
             )
+
+            # set error if required
+            if max_loop_time > 10:
+                print("*****************Long looptime********************")
+                device_errors = device_errors | 0x01
+
             # Reset statistics
             max_loop_time = 0.0
             total_loop_time = 0.0
@@ -108,7 +116,7 @@ async def heartbeat_loop() -> None:
             error_max1=max1.get_global_error(),
             error_max2=max2.get_global_error(),
             io_state=get_io_state(),
-            device_state=canp.DeviceState.RUNNING,
+            errors=device_errors,
             counter=counter & 0xFF,
         )
         # print(msg)
@@ -118,8 +126,6 @@ async def heartbeat_loop() -> None:
         led1.value = not led1.value
 
         counter += 1
-
-        # print(".", end="")
 
         await asyncio.sleep(0.1)
 
