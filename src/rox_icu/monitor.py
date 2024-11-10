@@ -45,7 +45,7 @@ class Device:
             getattr(hb, "error_max1", "--"),
             getattr(hb, "error_max2", "--"),
             io_state_bin,
-            getattr(hb, "device_state", "--"),
+            getattr(hb, "errors", "--"),
             getattr(hb, "counter", "--"),
         )
 
@@ -86,7 +86,7 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
         "ErrorMax1",
         "ErrorMax2",
         "IO State",
-        "DeviceState",
+        "Errors",
         "Counter",
     )
     pad.addstr(0, 0, header)

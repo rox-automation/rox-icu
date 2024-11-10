@@ -4,7 +4,7 @@ import pytest
 
 
 def test_version() -> None:
-    assert canp.VERSION == 8
+    assert canp.VERSION == 9
 
 
 def test_split() -> None:
@@ -65,7 +65,7 @@ def test_heartbeat() -> None:
     assert msg.error_max1 == 2
     assert msg.error_max2 == 3
     assert msg.io_state == 0xBE
-    assert msg.device_state == 0xEF
+    assert msg.errors == 0xEF
     assert msg.counter == 0xFF
 
     opcode, byte_def = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)

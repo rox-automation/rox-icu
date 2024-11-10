@@ -142,7 +142,7 @@ async def toggle_outputs() -> None:
     while True:
         for pin in D_PINS:
             pin.value = True
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0)
             pin.value = False
 
 

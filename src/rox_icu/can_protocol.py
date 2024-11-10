@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 import struct
 from collections import namedtuple
 
-VERSION = 8
+VERSION = 9
 
 
 class DeviceState:
@@ -74,7 +74,7 @@ HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io stat
 # opcode 1, normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
-    ("device_type", "error_max1", "error_max2", "io_state", "device_state", "counter"),
+    ("device_type", "error_max1", "error_max2", "io_state", "errors", "counter"),
 )
 
 # opcode 2, sent on change or request
