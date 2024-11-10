@@ -35,7 +35,8 @@
         "tamasfe.even-better-toml",
         "GitHub.copilot",
         "ms-python.pylint",
-        "ms-python.black-formatter"
+        "ms-python.black-formatter",
+        "ms-python.isort"
       ]
     }
   }
