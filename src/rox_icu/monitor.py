@@ -7,12 +7,15 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 from __future__ import annotations
-import os
-import can
+
 import curses
-import struct
+import os
 import signal
+import struct
 from dataclasses import dataclass
+
+import can
+
 from rox_icu import can_protocol as canp
 
 INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
@@ -70,7 +73,7 @@ def handle_msg(msg: can.Message) -> None:
 
 def signal_handler(signum, frame) -> None:
     """Handle keyboard interrupt"""
-    global should_exit
+    global should_exit  # pylint: disable=global-statement
     should_exit = True
 
 
@@ -80,15 +83,7 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
     pad.erase()
 
     # Draw header
-    header = "| {:<6} | {:<10} | {:<9} | {:<9} | {:<10} | {:<11} | {:<7} |".format(
-        "NodeID",
-        "DeviceType",
-        "ErrorMax1",
-        "ErrorMax2",
-        "IO State",
-        "Errors",
-        "Counter",
-    )
+    header = f"| {'NodeID':<6} | {'DeviceType':<10} | {'ErrorMax1':<9} | {'ErrorMax2':<9} | {'IO State':<10} | {'Errors':<11} | {'Counter':<7} |"
     pad.addstr(0, 0, header)
     pad.addstr(1, 0, "-" * len(header))
 
@@ -105,9 +100,7 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
             counter,
         ) = device.get_display_data()
 
-        row = "| {:<6} | {:<10} | {:<9} | {:<9} | {:<10} | {:<11} | {:<7} |".format(
-            node_id, dev_type, err1, err2, io_state, dev_state, counter
-        )
+        row = f"| {node_id:<6} | {dev_type:<10} | {err1:<9} | {err2:<9} | {io_state:<10} | {dev_state:<11} | {counter:<7} |"
         pad.addstr(idx, 0, row)
 
     # Calculate visible area
@@ -124,7 +117,7 @@ def main(stdscr: curses.window) -> None:
     curses.use_default_colors()  # Use terminal's default colors
 
     # Create a pad larger than the screen
-    height, width = stdscr.getmaxyx()
+    _, width = stdscr.getmaxyx()
     pad = curses.newpad(1000, width)  # Support up to 1000 rows
 
     # Set up signal handler for Ctrl+C
