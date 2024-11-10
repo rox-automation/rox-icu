@@ -213,7 +213,7 @@ class D_Pin:
         return f"D_Pin({self.chip.chip_address}, {self.pin_nr},{dir_sign})"
 
 
-D_PINS = []
+D_PINS: list[D_Pin] = []
 for max_chip in [max2, max1]:
     for pin_nr in range(4):
         D_PINS.append(D_Pin(max_chip, pin_nr))
