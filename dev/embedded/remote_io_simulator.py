@@ -177,7 +177,10 @@ async def toggle_outputs() -> None:
 
 async def main() -> None:
     await asyncio.gather(
-        read_inputs(), heartbeat_loop(), toggle_outputs(), receive_can_message()
+        read_inputs(),
+        heartbeat_loop(),
+        # toggle_outputs(),
+        receive_can_message(),
     )
 
 
