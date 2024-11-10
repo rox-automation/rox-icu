@@ -8,7 +8,7 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 import asyncio
 import logging
 import os
-from typing import Any, Coroutine, Callable, Union, TypeVar, cast
+from typing import Any, Coroutine, Callable, Union, TypeVar
 
 import coloredlogs
 
@@ -32,31 +32,54 @@ def setup_logging() -> None:
     logging.info(f"Log level set to {loglevel}")
 
 
-def run_main(func: MainFunction[T], trace_on_exc=False) -> T | None:
-    """
-    Convenience function to run either an async coroutine or a regular callable.
+def get_root_exception(exc: BaseException) -> BaseException:
+    """Traverse the exception chain to find the root cause."""
+    if isinstance(exc, ExceptionGroup):
+        # If it's an ExceptionGroup, recursively check its exceptions
+        for e in exc.exceptions:
+            return get_root_exception(e)
+    while exc.__cause__ is not None:
+        exc = exc.__cause__
+    return exc
 
-    Args:
-        func: Either a coroutine or a regular callable to execute
 
-    Returns:
-        The return value of the executed function
-
-    Raises:
-        Exception: Any exception that occurs during execution (except KeyboardInterrupt)
-    """
+def run_main(func: Callable, trace_on_exc: bool = False) -> None:
     setup_logging()
 
     try:
-        if asyncio.iscoroutine(func):
-            # If it's a coroutine, run it with asyncio
-            return cast(T, asyncio.run(func))
-        else:
-            # If it's a regular callable, just call it
-            return cast(Callable[[], T], func)()
+        func()
     except KeyboardInterrupt:
         logging.info("Process interrupted by user")
-        return cast(T, None)
+    except ExceptionGroup as group:
+        root_exc = get_root_exception(group)
+        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
+
     except Exception as e:
         logging.error(e, exc_info=trace_on_exc)
-        return cast(T, None)
+
+
+def run_main_async(
+    coro: Coroutine[Any, Any, None],
+    silence_loggers: list[str] | None = None,
+) -> None:
+    """convenience function to avoid code duplication"""
+
+    setup_logging()
+
+    if silence_loggers:
+        for logger in silence_loggers:
+            logging.info(f"Silencing logger: {logger}")
+            logging.getLogger(logger).setLevel(logging.WARNING)
+
+    try:
+        asyncio.run(coro)
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
+    except ExceptionGroup as group:
+        root_exc = get_root_exception(group)
+        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
+    except asyncio.CancelledError:
+        logging.error("Cancelled")
+    except Exception as e:
+        root_exc = get_root_exception(e)
+        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
