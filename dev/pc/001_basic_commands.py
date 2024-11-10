@@ -16,7 +16,7 @@ import rox_icu.can_protocol as canp
 
 NODE_ID = 0x01
 
-INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
+INTERFACE = os.getenv("ICU_INTERFACE", "slcan0")
 print(f"Using interface: {INTERFACE}")
 
 log = logging.getLogger("master")
@@ -32,7 +32,7 @@ async def send_messages(bus) -> None:
     io_state = 0
 
     try:
-        for i in range(16):
+        for i in range(256):
             io_msg = canp.IOStateMessage(io_state)
 
             arb_id, data = canp.encode_message(io_msg, NODE_ID)
@@ -47,7 +47,7 @@ async def send_messages(bus) -> None:
             if io_state & 0xFF == 0:
                 io_state = 1
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.01)
         log.info("Finished sending messages")
     except asyncio.CancelledError:
         log.info("Send messages cancelled")
