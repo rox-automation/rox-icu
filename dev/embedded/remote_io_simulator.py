@@ -9,11 +9,11 @@ import asyncio
 import struct
 import time
 import gc
-
 import can_protocol as canp
 import canio
 from icu_board import D_PINS, can, led1, max1, max2, max_enable
 from micropython import const
+from digitalio import Direction
 
 NODE_ID = const(0x01)
 device_errors = 0
@@ -42,6 +42,13 @@ def get_io_state() -> int:
     for bit, pin in enumerate(D_PINS):
         io_state |= pin.value << bit
     return io_state
+
+
+def set_io_state(state: int) -> None:
+    """set output pins based on state (byte)"""
+    for bit, pin in enumerate(D_PINS):
+        if pin.direction == Direction.OUTPUT:
+            pin.value = (state >> bit) & 0x01
 
 
 async def read_inputs() -> None:
@@ -134,9 +141,19 @@ async def receive_can_message() -> None:
     listener = can.listen(timeout=0)
     while True:
         if listener.in_waiting():
-            message = listener.receive()
-            if message:
-                print(f"Received message: {message.data.hex(' ')}")
+            msg = listener.receive()
+            if msg:
+                if canp.get_node_id(msg.id) == NODE_ID:
+                    if isinstance(msg, canio.RemoteTransmissionRequest):
+                        print(f"RTR message {msg.id:x}")
+                    else:
+                        decoded_msg = canp.decode_message(msg.id, msg.data)
+                        print(f"Received message: {decoded_msg}")
+
+                        if isinstance(decoded_msg, canp.IOStateMessage):
+                            set_io_state(decoded_msg.io_state)
+                            print(f"IO state set to: {decoded_msg.io_state}")
+
         await asyncio.sleep(0)  # Yield control to other tasks
 
 
@@ -147,9 +164,12 @@ async def toggle_outputs() -> None:
     """testing function to toggle outputs"""
     while True:
         for pin in D_PINS:
-            pin.value = True
-            await asyncio.sleep(0)
-            pin.value = False
+            if not pin.value:
+                pin.value = True
+                await asyncio.sleep(0.1)
+                pin.value = False
+            else:
+                await asyncio.sleep(0.1)
 
 
 # ---------------------main---------------------------------------------
