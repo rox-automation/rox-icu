@@ -43,7 +43,7 @@ def get_root_exception(exc: BaseException) -> BaseException:
     return exc
 
 
-def run_main(func: Callable, trace_on_exc: bool = False) -> None:
+def run_main(func: Callable) -> None:
     setup_logging()
 
     try:
@@ -52,10 +52,13 @@ def run_main(func: Callable, trace_on_exc: bool = False) -> None:
         logging.info("Process interrupted by user")
     except ExceptionGroup as group:
         root_exc = get_root_exception(group)
-        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
+        logging.error(
+            f"Root cause: {type(root_exc).__name__}: {str(root_exc)}",
+            exc_info=True,
+        )
 
     except Exception as e:
-        logging.error(e, exc_info=trace_on_exc)
+        logging.error(e, exc_info=True)
 
 
 def run_main_async(
