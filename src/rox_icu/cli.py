@@ -3,14 +3,16 @@
 rox_icu CLI
 """
 
+import os
+
 import can
 import click
+
+import rox_icu.can_protocol as canp
 from rox_icu import __version__
 from rox_icu.utils import run_main
-import rox_icu.can_protocol as canp
 
-
-DEFAULT_INTERFACE = "slcan0"
+DEFAULT_INTERFACE = os.environ.get("ICU_INTERFACE", "slcan0")
 
 
 @click.group()
@@ -40,11 +42,12 @@ def mock(node_id, interface):
 def monitor(interface):
     """Monitor ICU devices on CAN bus"""
     import curses
-    import rox_icu.monitor as monitor
 
-    monitor.INTERFACE = interface
+    import rox_icu.monitor as icu_monitor
 
-    curses.wrapper(monitor.main)
+    icu_monitor.INTERFACE = interface
+
+    curses.wrapper(icu_monitor.main)
 
 
 @cli.command()
