@@ -86,7 +86,7 @@ class Pin:
             new_state << self._number
         )
 
-    def update(self, new_state: bool) -> None:
+    def _update(self, new_state: bool) -> None:
         """update pin state, set events, used by ICU class"""
 
         if new_state == self._state:
@@ -266,7 +266,8 @@ class ICU:
         self._io_state = io_state
 
         for i in range(8):
-            self.pins[i].update(bool(io_state & (1 << i)))
+            # pylint: disable=protected-access
+            self.pins[i]._update(bool(io_state & (1 << i)))
 
     async def _message_handler(self) -> None:
         """Handle received messages"""
