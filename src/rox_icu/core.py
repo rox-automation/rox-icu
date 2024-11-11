@@ -10,12 +10,12 @@ import logging
 import threading
 import time
 from typing import Callable, Optional
+from typing import AsyncIterator, Literal
 
 import can
 
 from rox_icu import can_protocol as canp
 from rox_icu.utils import run_main_async
-
 
 # message timeout in seconds
 MESSAGE_TIMEOUT = 1.0  # message expiration time & can timeout
@@ -28,6 +28,61 @@ class DeviceError(Exception):
 
 class HeartbeatError(Exception):
     """No heartbeat error"""
+
+
+class AutoClearEvent(asyncio.Event):
+    """Event that automatically clears itself after all waiters are done"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_waiters: int = 0
+
+    async def wait(self) -> Literal[True]:
+        self._active_waiters += 1
+        try:
+            return await super().wait()
+        finally:
+            self._active_waiters -= 1
+            if self._active_waiters == 0:
+                self.clear()
+
+
+class Pin:
+    """Represents a single I/O pin with its state and events"""
+
+    def __init__(self, number: int) -> None:
+        self.number: int = number
+        self._state: bool = False
+        self._previous_state: bool = False
+        self.on_high: AutoClearEvent = AutoClearEvent()
+        self.on_low: AutoClearEvent = AutoClearEvent()
+        self.on_change: AutoClearEvent = AutoClearEvent()
+
+    @property
+    def state(self) -> bool:
+        return self._state
+
+    @state.setter
+    def state(self, new_state: bool) -> None:
+        """Update pin state and trigger relevant events. Returns True if state changed."""
+        if new_state == self._state:
+            return
+
+        self._previous_state = self._state
+        self._state = new_state
+
+        # Set appropriate events
+        self.on_change.set()
+        if new_state:
+            self.on_high.set()
+        else:
+            self.on_low.set()
+
+    async def changes(self) -> AsyncIterator[bool]:
+        """Async iterator for all state changes"""
+        while True:
+            await self.on_change.wait()
+            yield self.state
 
 
 class ICU:
