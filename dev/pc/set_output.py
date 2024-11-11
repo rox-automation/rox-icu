@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+ test output pins
+
+ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
+"""
 import asyncio
 import os
 
@@ -16,10 +22,10 @@ async def main() -> None:
 
     for i in range(32):
 
-        icu.set_output(i)
+        icu.io_state = i
         await asyncio.sleep(0.1)
 
-    icu.set_output(0)
+    icu.io_state = 0
 
     await icu.stop()
     print("Done")

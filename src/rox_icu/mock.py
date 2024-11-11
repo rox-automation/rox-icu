@@ -21,6 +21,7 @@ from rox_icu.utils import run_main
 
 # Constants for CAN messages
 NODE_ID = 0x01
+DEVICE_TYPE = 201
 
 # CAN logger to INFO level
 logger_can = logging.getLogger("can")
@@ -112,7 +113,7 @@ class ICUMockCAN:
         while True:
             # Construct the heartbeat message
             heartbeat = canp.HeartbeatMessage(
-                device_type=1,
+                device_type=DEVICE_TYPE,
                 error_max1=self.icumock.error_max1,
                 error_max2=self.icumock.error_max2,
                 io_state=self.icumock.io_state,

@@ -8,11 +8,13 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-import os
-import can
 import logging
-from rox_icu.utils import run_main
+import os
+
+import can
+
 import rox_icu.can_protocol as canp
+from rox_icu.utils import run_main_async
 
 NODE_ID = 0x01
 
@@ -105,4 +107,4 @@ async def main():
         bus.shutdown()
 
 
-run_main(main())
+run_main_async(main())
