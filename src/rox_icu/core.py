@@ -67,6 +67,19 @@ class ICU:
         """Node ID"""
         return self._node_id
 
+    def set_output(self, state: int) -> None:
+        """Set output state, provide a byte for all 8 outputs"""
+
+        self._log.debug(f"> {self._node_id=} {state=}")
+
+        self.check_alive()
+
+        arb_id, msg_data = canp.encode_message(
+            canp.IOStateMessage(state), node_id=self._node_id
+        )
+
+        self._bus.send(can.Message(arbitration_id=arb_id, data=msg_data))
+
     def check_alive(self) -> None:
         """Check if device is alive, raise an exception if not"""
         if self._last_heartbeat is None:
