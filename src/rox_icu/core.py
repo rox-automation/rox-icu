@@ -146,7 +146,9 @@ class ICU:
             canp.IOStateMessage(state), node_id=self._node_id
         )
 
-        self._bus.send(can.Message(arbitration_id=arb_id, data=msg_data))
+        self._bus.send(
+            can.Message(arbitration_id=arb_id, data=msg_data, is_extended_id=False)
+        )
 
     def check_alive(self) -> None:
         """Check if device is alive, raise an exception if not"""
@@ -251,6 +253,10 @@ class ICU:
 
         self._log.debug("CAN reader thread stopped")
 
+    def _uptate_io_state(self, io_state: int) -> None:
+        """Update IO state"""
+        self._io_state = io_state
+
     async def _message_handler(self) -> None:
         """Handle received messages"""
         while self._running:
@@ -263,13 +269,13 @@ class ICU:
                 if isinstance(msg, canp.HeartbeatMessage):
                     self._last_heartbeat = msg
                     self._last_heartbeat_time = time.time()
-                    self.io_state = self._last_heartbeat.io_state
+                    self._uptate_io_state(self._last_heartbeat.io_state)
                     self._heartbeat_event.set()
                     self._log.debug(f"heartbeat: {self._last_heartbeat}")
 
                 elif isinstance(msg, canp.IOStateMessage):
                     msg = canp.IOStateMessage(*data)
-                    self.io_state = msg.io_state
+                    self._uptate_io_state(msg.io_state)
 
             except asyncio.CancelledError:
                 break
