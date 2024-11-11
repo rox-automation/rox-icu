@@ -162,14 +162,11 @@ async def receive_can_message() -> None:
 
 async def toggle_outputs() -> None:
     """testing function to toggle outputs"""
+    pin = D_PINS[0]
+
     while True:
-        for pin in D_PINS:
-            if not pin.value:
-                pin.value = True
-                await asyncio.sleep(0.1)
-                pin.value = False
-            else:
-                await asyncio.sleep(0.1)
+        pin.value = not pin.value
+        await asyncio.sleep(0.5)
 
 
 # ---------------------main---------------------------------------------
@@ -179,7 +176,7 @@ async def main() -> None:
     await asyncio.gather(
         read_inputs(),
         heartbeat_loop(),
-        # toggle_outputs(),
+        toggle_outputs(),
         receive_can_message(),
     )
 
