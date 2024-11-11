@@ -15,7 +15,6 @@ from typing import Literal
 import can
 
 from rox_icu import can_protocol as canp
-from rox_icu.utils import run_main_async
 
 # message timeout in seconds
 MESSAGE_TIMEOUT = 1.0  # message expiration time & can timeout
@@ -295,25 +294,3 @@ class ICU:
                 self._log.error(f"Error processing message: {e}")
 
         self._log.debug("Message handler stopped")
-
-
-async def _demo(icu: ICU) -> None:
-    """Run ICU with proper startup and shutdown handling"""
-    try:
-        await icu.start()
-        while True:
-            await asyncio.sleep(1)
-            logging.info(f"IO State: {icu.io_state:08b}")
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        logging.info("Shutdown requested")
-    finally:
-        await icu.stop()
-
-
-if __name__ == "__main__":
-
-    async def main() -> None:
-        icu = ICU(node_id=1, interface="slcan0")
-        await _demo(icu)
-
-    run_main_async(main())
