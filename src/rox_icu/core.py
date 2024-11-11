@@ -76,10 +76,18 @@ class Pin:
 
     @state.setter
     def state(self, new_state: bool) -> None:
-        """Update pin state and trigger relevant events. Returns True if state changed."""
+        if self._is_input:
+            raise ValueError("pin is read-only")
 
-        if self._parent is not None and not self._is_input:
-            raise NotImplementedError("Output pins are not supported yet")
+        if self._parent is None:
+            raise RuntimeError("parent is not set")
+
+        self._parent.io_state = self._parent.io_state & ~(1 << self._number) | (
+            new_state << self._number
+        )
+
+    def update(self, new_state: bool) -> None:
+        """update pin state, set events, used by ICU class"""
 
         if new_state == self._state:
             return
@@ -256,6 +264,9 @@ class ICU:
     def _uptate_io_state(self, io_state: int) -> None:
         """Update IO state"""
         self._io_state = io_state
+
+        for i in range(8):
+            self.pins[i].update(bool(io_state & (1 << i)))
 
     async def _message_handler(self) -> None:
         """Handle received messages"""
