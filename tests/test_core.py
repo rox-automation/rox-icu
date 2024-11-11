@@ -21,6 +21,7 @@ def test_pin_initial_state():
 async def test_pin_set_state():
     pin = get_pin()
     pin.state = True
+    assert not pin.is_input
     assert pin.state
     pin.state = False
     assert not pin.state
