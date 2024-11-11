@@ -1,3 +1,4 @@
+# pylint: disable=protected-access
 import asyncio
 import pytest
 
@@ -20,10 +21,10 @@ def test_pin_initial_state():
 @pytest.mark.asyncio
 async def test_pin_set_state():
     pin = get_pin()
-    pin.state = True
+    pin._update(True)
     assert not pin.is_input
     assert pin.state
-    pin.state = False
+    pin._update(False)
     assert not pin.state
 
 
@@ -37,12 +38,12 @@ async def test_on_high_event():
     assert not pin.on_high.is_set()
 
     # set low, no events should be triggered
-    pin.state = False
+    pin._update(False)
     assert not pin.on_low.is_set()
     assert not pin.on_high.is_set()
 
     # set high, on_high event should be triggered
-    pin.state = True
+    pin._update(True)
     assert not pin.on_low.is_set()
     assert pin.on_high.is_set()
 
@@ -60,7 +61,7 @@ async def test_on_low_event():
     assert not pin.on_high.is_set()
 
     # set high, on_high should be triggered
-    pin.state = True
+    pin._update(True)
     assert not pin.on_low.is_set()
     assert pin.on_high.is_set()
 
@@ -68,7 +69,7 @@ async def test_on_low_event():
     assert not pin.on_high.is_set()
 
     # set low, on_low should be triggered
-    pin.state = False
+    pin._update(False)
     assert pin.on_low.is_set()
     assert not pin.on_high.is_set()
 
@@ -87,7 +88,7 @@ async def test_on_change() -> None:
         """toggle state a couple of times"""
 
         for _ in range(10):
-            pin.state = not pin.state
+            pin._update(not pin.state)
             await asyncio.sleep(0.001)
 
     async def on_change_counter() -> int:
