@@ -10,7 +10,7 @@ import logging
 import threading
 import time
 from typing import Callable, Optional
-from typing import AsyncIterator, Literal
+from typing import Literal
 
 import can
 
@@ -77,12 +77,6 @@ class Pin:
             self.on_high.set()
         else:
             self.on_low.set()
-
-    async def changes(self) -> AsyncIterator[bool]:
-        """Async iterator for all state changes"""
-        while True:
-            await self.on_change.wait()
-            yield self.state
 
 
 class ICU:
