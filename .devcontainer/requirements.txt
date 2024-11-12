@@ -15,6 +15,7 @@ orjson
 pre-commit
 pylint
 pytest
+pytest-asyncio
 pytest-cov
 pytest-coverage
 pytest-mock

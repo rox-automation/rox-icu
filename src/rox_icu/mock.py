@@ -15,8 +15,11 @@ import logging
 from typing import Optional
 
 import can
+from can.interfaces.socketcan import SocketcanBus
+from can.interfaces.udp_multicast import UdpMulticastBus
 
 import rox_icu.can_protocol as canp
+from rox_icu.can_utils import get_can_bus
 from rox_icu.utils import run_main
 
 # Constants for CAN messages
@@ -60,17 +63,13 @@ class ICUMockCAN:
     def __init__(
         self,
         node_id: int = NODE_ID,
-        channel: str = "vcan0",
-        interface: str = "socketcan",
+        can_bus: SocketcanBus | UdpMulticastBus | None = None,
     ):
         self._log = logging.getLogger(f"icu.mock.{node_id}")
         self.node_id = node_id
-        self._channel = channel
-        self._interface = interface
         self.icumock = ICUMock(logger=self._log)
 
-        self._log.info(f"Starting mock {node_id=} , {channel=} , {interface=}")
-        self._bus = can.interface.Bus(channel=channel, interface=interface)
+        self._bus = can_bus or get_can_bus()
         self._can_reader = can.AsyncBufferedReader()
         self._notifier = can.Notifier(self._bus, [self._can_reader])
 
@@ -93,7 +92,6 @@ class ICUMockCAN:
                 )
 
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
-                self._log.info(f"Received message: {msg}")
 
                 if isinstance(msg, canp.IOStateMessage):
                     self.icumock.io_state = msg.io_state
@@ -106,9 +104,6 @@ class ICUMockCAN:
         self._log.info("Starting heartbeat loop")
 
         counter = 0
-
-        # Note: this can be more efficient by pre-calculating arb_id and msg_def
-        # and using struct.pack directly
 
         while True:
             # Construct the heartbeat message
@@ -172,9 +167,9 @@ class ICUMockCAN:
         self._bus.shutdown()
 
 
-def main(node_id: int = NODE_ID, interface: str = "vcan0"):
+def main(node_id: int = NODE_ID):
     try:
-        mock = ICUMockCAN(node_id, interface)
+        mock = ICUMockCAN(node_id)
         mock.start()
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt - shutting down ICU mock")

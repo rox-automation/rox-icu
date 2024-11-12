@@ -9,17 +9,15 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 import logging
-import os
 
 import can
 
 import rox_icu.can_protocol as canp
+from rox_icu.can_utils import get_can_bus
 from rox_icu.utils import run_main_async
 
 NODE_ID = 0x01
 
-INTERFACE = os.getenv("ICU_INTERFACE", "slcan0")
-print(f"Using interface: {INTERFACE}")
 
 log = logging.getLogger("master")
 
@@ -63,7 +61,11 @@ async def receive_messages(reader):
             raw_msg = await reader.get_message()
             node_id = canp.get_node_id(raw_msg.arbitration_id)
 
-            msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
+            try:
+                msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
+            except KeyError:
+                log.error(f"Unknown message: {raw_msg}")
+                continue
 
             log.info(f"< node [{node_id}] message: {msg.__class__.__name__}")
 
@@ -74,9 +76,7 @@ async def receive_messages(reader):
 
 async def main():
     # Start the sending and receiving coroutines
-    bus = can.interface.Bus(
-        channel=INTERFACE, interface="socketcan", receive_own_messages=True
-    )
+    bus = get_can_bus()
 
     reader = can.AsyncBufferedReader()
     notifier = can.Notifier(bus, [reader])

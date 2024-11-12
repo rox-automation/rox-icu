@@ -5,16 +5,19 @@ ICU CAN driver
 Copyright (c) 2024 ROX Automation
 """
 from __future__ import annotations
+
 import asyncio
 import logging
 import threading
 import time
-from typing import Optional
-from typing import Literal
+from typing import Literal, Optional
 
 import can
+from can.interfaces.socketcan import SocketcanBus
+from can.interfaces.udp_multicast import UdpMulticastBus
 
 from rox_icu import can_protocol as canp
+from rox_icu.can_utils import get_can_bus
 
 # message timeout in seconds
 MESSAGE_TIMEOUT = 1.0  # message expiration time & can timeout
@@ -108,13 +111,12 @@ class ICU:
     def __init__(
         self,
         node_id: int,
-        interface: str = "can0",
-        interface_type: str = "socketcan",
+        can_bus: UdpMulticastBus | SocketcanBus | None = None,
     ) -> None:
         self._log = logging.getLogger(f"icu.{node_id}")
         self._node_id = node_id
 
-        self._bus = can.interface.Bus(channel=interface, interface=interface_type)
+        self._bus = can_bus or get_can_bus()
 
         self._receive_thread: Optional[threading.Thread] = None
         self._msg_task: Optional[asyncio.Task] = None

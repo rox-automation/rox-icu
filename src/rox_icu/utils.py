@@ -80,9 +80,13 @@ def run_main_async(
         print("KeyboardInterrupt")
     except ExceptionGroup as group:
         root_exc = get_root_exception(group)
-        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
+        logging.error(
+            f"Root cause: {type(root_exc).__name__}: {str(root_exc)}", exc_info=True
+        )
     except asyncio.CancelledError:
         logging.error("Cancelled")
     except Exception as e:
         root_exc = get_root_exception(e)
-        logging.error(f"Root cause: {type(root_exc).__name__}: {str(root_exc)}")
+        logging.error(
+            f"Root cause: {type(root_exc).__name__}: {str(root_exc)}", exc_info=True
+        )

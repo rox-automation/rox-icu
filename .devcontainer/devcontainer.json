@@ -1,5 +1,5 @@
 {
-  "initializeCommand": "mkdir -p /var/tmp/container-extensions-icu", // executed on HOST system
+  "initializeCommand": "mkdir -p .devcontainer/extensions", // executed on HOST system
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
@@ -13,13 +13,14 @@
     "--privileged"
   ],
   "mounts": [
-    "source=/var/tmp/container-extensions-icu,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
+    "source=${localWorkspaceFolder}/.devcontainer/extensions,target=/home/dev/.vscode-server/extensions,type=bind,consistency=cached"
   ],
   "postCreateCommand": ".devcontainer/init_container.sh",
   // set env variables
   "containerEnv": {
     "PYTHONPATH": "${containerWorkspaceFolder}/embedded_lib",
-    "ICU_INTERFACE": "vcan0"
+    "CAN_CHANNEL": "224.0.0.1",
+    "CAN_INTERFACE": "udp_multicast"
   },
   // Configure tool-specific properties.
   "customizations": {

@@ -50,7 +50,11 @@ RUN pip3 install -r requirements.txt && rm requirements.txt
 USER ${USERNAME}
 RUN echo 'export PS1="🐳  \[\033[1;36m\]'"${PROJECT}"' \[\e[33m\]\W\[\e[m\] \[\033[1;36m\]# \[\033[0m\]"' >> ~/.bashrc
 
-ENV PATH="${PATH}:/home/${USERNAME}/.local/bin"
+# add local bin to PATH in bashrc
+RUN echo 'export PATH="${PATH}:/home/'${USERNAME}'/.local/bin"' >> ~/.bashrc
+
+# add shortcuts to bashrc
+RUN echo 'alias canview="python -m can.viewer -c $CAN_CHANNEL -i $CAN_INTERFACE"' >> ~/.bashrc
 
 WORKDIR /home/${USERNAME}
 
