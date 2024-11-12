@@ -57,9 +57,9 @@ class Pin:
         self._is_input: bool = is_input
         self._state: bool = False
         self._previous_state: bool = False
-        self.on_high: AutoClearEvent = AutoClearEvent()
-        self.on_low: AutoClearEvent = AutoClearEvent()
-        self.on_change: AutoClearEvent = AutoClearEvent()
+        self.high_event: AutoClearEvent = AutoClearEvent()
+        self.low_event: AutoClearEvent = AutoClearEvent()
+        self.change_event: AutoClearEvent = AutoClearEvent()
 
     @property
     def number(self) -> int:
@@ -95,11 +95,11 @@ class Pin:
         self._state = new_state
 
         # Set appropriate events
-        self.on_change.set()
+        self.change_event.set()
         if new_state:
-            self.on_high.set()
+            self.high_event.set()
         else:
-            self.on_low.set()
+            self.low_event.set()
 
 
 class ICU:

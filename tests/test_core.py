@@ -13,9 +13,9 @@ def test_pin_initial_state():
     pin = get_pin()
     assert not pin.state
     assert pin.number == 5
-    assert pin.on_high is not None
-    assert pin.on_low is not None
-    assert pin.on_change is not None
+    assert pin.high_event is not None
+    assert pin.low_event is not None
+    assert pin.change_event is not None
 
 
 @pytest.mark.asyncio
@@ -34,22 +34,22 @@ async def test_on_high_event():
     assert not pin.state
 
     # both events should be cleared
-    assert not pin.on_low.is_set()
-    assert not pin.on_high.is_set()
+    assert not pin.low_event.is_set()
+    assert not pin.high_event.is_set()
 
     # set low, no events should be triggered
     pin._update(False)
-    assert not pin.on_low.is_set()
-    assert not pin.on_high.is_set()
+    assert not pin.low_event.is_set()
+    assert not pin.high_event.is_set()
 
     # set high, on_high event should be triggered
     pin._update(True)
-    assert not pin.on_low.is_set()
-    assert pin.on_high.is_set()
+    assert not pin.low_event.is_set()
+    assert pin.high_event.is_set()
 
     # check auto-clearing
-    await pin.on_high.wait()
-    assert not pin.on_high.is_set()  # AutoClearEvent should be cleared
+    await pin.high_event.wait()
+    assert not pin.high_event.is_set()  # AutoClearEvent should be cleared
 
 
 @pytest.mark.asyncio
@@ -57,25 +57,25 @@ async def test_on_low_event():
     pin = get_pin()
 
     # both events should be cleared
-    assert not pin.on_low.is_set()
-    assert not pin.on_high.is_set()
+    assert not pin.low_event.is_set()
+    assert not pin.high_event.is_set()
 
     # set high, on_high should be triggered
     pin._update(True)
-    assert not pin.on_low.is_set()
-    assert pin.on_high.is_set()
+    assert not pin.low_event.is_set()
+    assert pin.high_event.is_set()
 
-    await pin.on_high.wait()
-    assert not pin.on_high.is_set()
+    await pin.high_event.wait()
+    assert not pin.high_event.is_set()
 
     # set low, on_low should be triggered
     pin._update(False)
-    assert pin.on_low.is_set()
-    assert not pin.on_high.is_set()
+    assert pin.low_event.is_set()
+    assert not pin.high_event.is_set()
 
     # check auto-clearing
-    await pin.on_low.wait()
-    assert not pin.on_low.is_set()
+    await pin.low_event.wait()
+    assert not pin.low_event.is_set()
 
 
 @pytest.mark.asyncio
@@ -96,7 +96,7 @@ async def test_on_change() -> None:
         count = 0
         try:
             while True:
-                await asyncio.wait_for(pin.on_change.wait(), timeout=0.1)
+                await asyncio.wait_for(pin.change_event.wait(), timeout=0.1)
                 count += 1
         except asyncio.TimeoutError:
             pass

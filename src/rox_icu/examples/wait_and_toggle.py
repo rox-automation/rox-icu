@@ -31,7 +31,7 @@ async def handle_input(icu: ICU) -> None:
 
     while True:
         log.info("Waiting for high state")
-        await sensor.on_high.wait()
+        await sensor.high_event.wait()
         log.info(f"Sensor state: {sensor.state}")
 
         # toggle relay
