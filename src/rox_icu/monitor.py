@@ -9,7 +9,6 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 from __future__ import annotations
 
 import curses
-import os
 import signal
 import struct
 from dataclasses import dataclass
@@ -17,8 +16,8 @@ from dataclasses import dataclass
 import can
 
 from rox_icu import can_protocol as canp
+from rox_icu.can_utils import get_can_bus
 
-INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
 
 HB_OPCODE, HB_BYTEDEF = canp.get_opcode_and_bytedef(canp.HeartbeatMessage)
 
@@ -124,7 +123,7 @@ def main(stdscr: curses.window) -> None:
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        with can.Bus(channel=INTERFACE, bustype="socketcan") as bus:
+        with get_can_bus() as bus:
             while not should_exit:
                 # Check for messages
                 msg = bus.recv(timeout=0.1)  # 100ms timeout

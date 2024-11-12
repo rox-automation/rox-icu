@@ -6,6 +6,7 @@
 """
 
 import os
+import logging
 from can.interfaces.udp_multicast import UdpMulticastBus
 from can.interfaces.socketcan import SocketcanBus
 
@@ -21,10 +22,11 @@ def get_can_bus() -> UdpMulticastBus | SocketcanBus:
         )
 
     interface = os.getenv("CAN_INTERFACE", "socketcan")
-
+    logging.info(f"Using CAN interface: {interface}, channel: {channel}")
     if interface == "udp_multicast":
-        return UdpMulticastBus(channel, interface=interface, receive_own_messages=False)
-    else:
-        return SocketcanBus(
-            channel=channel, interface=interface, receive_own_messages=False
-        )
+        # note: will always receive own messages
+        return UdpMulticastBus(channel, interface=interface)
+
+    return SocketcanBus(
+        channel=channel, interface=interface, receive_own_messages=False
+    )

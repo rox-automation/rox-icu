@@ -5,7 +5,6 @@
  Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 import asyncio
-import os
 import logging
 
 from rox_icu.core import ICU
@@ -15,9 +14,6 @@ NODE_ID = 1
 
 SENSOR_PIN = 7
 RELAY_PIN = 0
-
-INTERFACE = os.getenv("ICU_INTERFACE", "vcan0")
-print(f"Using interface: {INTERFACE}")
 
 log = logging.getLogger("main")
 
@@ -42,7 +38,7 @@ async def handle_input(icu: ICU) -> None:
 
 async def main() -> None:
 
-    icu = ICU(NODE_ID, INTERFACE)
+    icu = ICU(NODE_ID)
     await icu.start()
 
     try:
