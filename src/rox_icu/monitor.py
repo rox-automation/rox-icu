@@ -82,7 +82,7 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
     pad.erase()
 
     # Draw header
-    header = f"| {'NodeID':<6} | {'DeviceType':<10} | {'ErrorMax1':<9} | {'ErrorMax2':<9} | {'IO State':<10} | {'Errors':<11} | {'Counter':<7} |"
+    header = f"| {'NodeID':<6} | {'DevType':<7} | {'ErrMax1':<7} | {'ErrMax2':<7} | {'IO State':<8} | {'Errors':<6} | {'Counter':<7} |"
     pad.addstr(0, 0, header)
     pad.addstr(1, 0, "-" * len(header))
 
@@ -95,11 +95,11 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
             err1,
             err2,
             io_state,
-            dev_state,
+            errors,
             counter,
         ) = device.get_display_data()
 
-        row = f"| {node_id:<6} | {dev_type:<10} | {err1:<9} | {err2:<9} | {io_state:<10} | {dev_state:<11} | {counter:<7} |"
+        row = f"| {node_id:<6} | {dev_type:<7} | {err1:<7} | {err2:<7} | {io_state:<8} | 0x{errors:<5x}| {counter:<7} |"
         pad.addstr(idx, 0, row)
 
     # Calculate visible area
