@@ -52,7 +52,8 @@ disable_error_code = ["attr-defined"]
 
 #-----------------pytest configuration----------------
 [tool.pytest.ini_options]
-filterwarnings = "ignore::DeprecationWarning:dateutil.*"
+asyncio_default_fixture_loop_scope = "function"
+# filterwarnings = "ignore::DeprecationWarning:dateutil.*"
 
 log_cli = false
 log_cli_level = "DEBUG"

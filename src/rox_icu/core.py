@@ -4,18 +4,17 @@ ICU CAN driver
 
 Copyright (c) 2024 ROX Automation
 """
-
+from __future__ import annotations
 import asyncio
 import logging
 import threading
 import time
-from typing import Callable, Optional
+from typing import Optional
+from typing import Literal
 
 import can
 
 from rox_icu import can_protocol as canp
-from rox_icu.utils import run_main_async
-
 
 # message timeout in seconds
 MESSAGE_TIMEOUT = 1.0  # message expiration time & can timeout
@@ -30,6 +29,79 @@ class HeartbeatError(Exception):
     """No heartbeat error"""
 
 
+class AutoClearEvent(asyncio.Event):
+    """Event that automatically clears itself after all waiters are done"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_waiters: int = 0
+
+    async def wait(self) -> Literal[True]:
+        self._active_waiters += 1
+        try:
+            return await super().wait()
+        finally:
+            self._active_waiters -= 1
+            if self._active_waiters == 0:
+                self.clear()
+
+
+class Pin:
+    """Represents a single I/O pin with its state and events"""
+
+    def __init__(
+        self, number: int, is_input: bool = False, parent: ICU | None = None
+    ) -> None:
+        self._parent = parent
+        self._number: int = number
+        self._is_input: bool = is_input
+        self._state: bool = False
+        self._previous_state: bool = False
+        self.high_event: AutoClearEvent = AutoClearEvent()
+        self.low_event: AutoClearEvent = AutoClearEvent()
+        self.change_event: AutoClearEvent = AutoClearEvent()
+
+    @property
+    def number(self) -> int:
+        return self._number
+
+    @property
+    def is_input(self) -> bool:
+        return self._is_input
+
+    @property
+    def state(self) -> bool:
+        return self._state
+
+    @state.setter
+    def state(self, new_state: bool) -> None:
+        if self._is_input:
+            raise ValueError("pin is read-only")
+
+        if self._parent is None:
+            raise RuntimeError("parent is not set")
+
+        self._parent.io_state = self._parent.io_state & ~(1 << self._number) | (
+            new_state << self._number
+        )
+
+    def _update(self, new_state: bool) -> None:
+        """update pin state, set events, used by ICU class"""
+
+        if new_state == self._state:
+            return
+
+        self._previous_state = self._state
+        self._state = new_state
+
+        # Set appropriate events
+        self.change_event.set()
+        if new_state:
+            self.high_event.set()
+        else:
+            self.low_event.set()
+
+
 class ICU:
     """ICU CAN driver"""
 
@@ -38,7 +110,6 @@ class ICU:
         node_id: int,
         interface: str = "can0",
         interface_type: str = "socketcan",
-        on_dio_change: Optional[Callable[["ICU"], None]] = None,
     ) -> None:
         self._log = logging.getLogger(f"icu.{node_id}")
         self._node_id = node_id
@@ -56,18 +127,22 @@ class ICU:
         self._ignored_messages: set = set()
         self._running = True
 
-        # Public state
-        self.io_state: int = 0
+        self._io_state: int = 0
 
-        # Optional callback for IO state changes
-        self.on_dio_change: Optional[Callable[["ICU"], None]] = on_dio_change
+        self.pins = [Pin(i, parent=self) for i in range(8)]
 
     @property
     def node_id(self) -> int:
         """Node ID"""
         return self._node_id
 
-    def set_output(self, state: int) -> None:
+    @property
+    def io_state(self) -> int:
+        """Get IO state"""
+        return self._io_state
+
+    @io_state.setter
+    def io_state(self, state: int) -> None:
         """Set output state, provide a byte for all 8 outputs"""
 
         self._log.debug(f"> {self._node_id=} {state=}")
@@ -78,7 +153,9 @@ class ICU:
             canp.IOStateMessage(state), node_id=self._node_id
         )
 
-        self._bus.send(can.Message(arbitration_id=arb_id, data=msg_data))
+        self._bus.send(
+            can.Message(arbitration_id=arb_id, data=msg_data, is_extended_id=False)
+        )
 
     def check_alive(self) -> None:
         """Check if device is alive, raise an exception if not"""
@@ -183,6 +260,14 @@ class ICU:
 
         self._log.debug("CAN reader thread stopped")
 
+    def _uptate_io_state(self, io_state: int) -> None:
+        """Update IO state"""
+        self._io_state = io_state
+
+        for i in range(8):
+            # pylint: disable=protected-access
+            self.pins[i]._update(bool(io_state & (1 << i)))
+
     async def _message_handler(self) -> None:
         """Handle received messages"""
         while self._running:
@@ -195,16 +280,13 @@ class ICU:
                 if isinstance(msg, canp.HeartbeatMessage):
                     self._last_heartbeat = msg
                     self._last_heartbeat_time = time.time()
-                    self.io_state = self._last_heartbeat.io_state
+                    self._uptate_io_state(self._last_heartbeat.io_state)
                     self._heartbeat_event.set()
                     self._log.debug(f"heartbeat: {self._last_heartbeat}")
 
                 elif isinstance(msg, canp.IOStateMessage):
                     msg = canp.IOStateMessage(*data)
-                    self.io_state = msg.io_state
-
-                    if self.on_dio_change is not None:
-                        self.on_dio_change(self)
+                    self._uptate_io_state(msg.io_state)
 
             except asyncio.CancelledError:
                 break
@@ -212,25 +294,3 @@ class ICU:
                 self._log.error(f"Error processing message: {e}")
 
         self._log.debug("Message handler stopped")
-
-
-async def _demo(icu: ICU) -> None:
-    """Run ICU with proper startup and shutdown handling"""
-    try:
-        await icu.start()
-        while True:
-            await asyncio.sleep(1)
-            logging.info(f"IO State: {icu.io_state:08b}")
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        logging.info("Shutdown requested")
-    finally:
-        await icu.stop()
-
-
-if __name__ == "__main__":
-
-    async def main() -> None:
-        icu = ICU(node_id=1, interface="slcan0")
-        await _demo(icu)
-
-    run_main_async(main())
