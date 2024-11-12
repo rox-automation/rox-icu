@@ -64,6 +64,7 @@ log_cli_date_format = "%H:%M:%S"
 [tool.coverage.run]
 omit = [
     "tests/*",
+    "src/rox_icu/cli.py"
 ]
 
 #------------------pylint configuration----------------

@@ -115,3 +115,14 @@ async def test_on_change() -> None:
 
     # Since we toggled 10 times, we should have 10 changes
     assert count == 10
+
+
+# @pytest.mark.asyncio
+# async def test_heartbeat() -> None:
+
+#     node_id = 42
+#     icu = ICU(node_id)
+
+#     # no mock is running, so this should raise an error
+#     with pytest.raises(HeartbeatError):
+#         await icu.start()
