@@ -126,17 +126,3 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     opcode = arb_id & 0x1F
     message_class = _OPCODE2MSG[opcode]
     return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))
-
-
-if __name__ == "__main__":  # pragma: no cover
-    # simple tests
-    print("ROX CAN Protocol v", VERSION)
-    node_id = 1
-
-    msg = HeartbeatMessage(1, 2, 3, 4, 5, 6)
-    print("Heartbeat message:", msg)
-
-    msg_id, data = encode_message(msg, node_id)
-    msg2 = decode_message(msg_id, data)
-
-    assert msg2 == msg
