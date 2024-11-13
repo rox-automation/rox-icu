@@ -12,7 +12,6 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 import logging
-from typing import Optional
 
 import can
 from can.interfaces.socketcan import SocketcanBus
@@ -33,13 +32,26 @@ if logger_can is not None:
 
 
 class ICUMock:
-    """Mock of the physical ICU device excluding CAN interface."""
+    """Class to mock the ICU CAN interface."""
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
-        self.log = logger or logging.getLogger("icu_mock")
+    def __init__(
+        self,
+        node_id: int = NODE_ID,
+        can_bus: SocketcanBus | UdpMulticastBus | None = None,
+        simulate_inputs: bool = False,
+    ):
+        self._log = logging.getLogger(f"icu.mock.{node_id}")
+        self.node_id = node_id
+
         self._io_state = 0  # Represents the state of all I/Os (8 bits for 8 I/Os)
         self.error_max1 = 0
         self.error_max2 = 0
+
+        self._simulate_inputs = simulate_inputs
+
+        self._bus = can_bus or get_can_bus()
+        self._can_reader = can.AsyncBufferedReader()
+        self._notifier = can.Notifier(self._bus, [self._can_reader])
 
     @property
     def io_state(self):
@@ -47,33 +59,27 @@ class ICUMock:
         return self._io_state
 
     @io_state.setter
-    def io_state(self, new_state: int):
+    def io_state(self, new_state: int) -> None:
         """Set the IO state."""
-        self.log.info(f"Setting IO state: {new_state:02x}")
+        self._log.info(f"Setting IO state: {new_state:02x}")
         self._io_state = new_state
 
-    def get_global_error(self):
+        arb_id, data_bytes = canp.encode_message(
+            canp.IOStateMessage(self._io_state), self.node_id
+        )
+
+        message = can.Message(
+            arbitration_id=arb_id,
+            data=data_bytes,
+            is_extended_id=False,
+        )
+        self._bus.send(message)
+
+    def get_global_error(self) -> tuple[int, int]:
         """Return the error status of max1 and max2."""
         return self.error_max1, self.error_max2
 
-
-class ICUMockCAN:
-    """Class to mock the ICU CAN interface."""
-
-    def __init__(
-        self,
-        node_id: int = NODE_ID,
-        can_bus: SocketcanBus | UdpMulticastBus | None = None,
-    ):
-        self._log = logging.getLogger(f"icu.mock.{node_id}")
-        self.node_id = node_id
-        self.icumock = ICUMock(logger=self._log)
-
-        self._bus = can_bus or get_can_bus()
-        self._can_reader = can.AsyncBufferedReader()
-        self._notifier = can.Notifier(self._bus, [self._can_reader])
-
-    async def message_handler(self):
+    async def message_handler(self) -> None:
         """Handle received CAN messages."""
         self._log.info("Starting message handler")
 
@@ -93,13 +99,14 @@ class ICUMockCAN:
 
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
 
-                if isinstance(msg, canp.IOStateMessage):
-                    self.icumock.io_state = msg.io_state
+                if isinstance(msg, canp.IOSetMessage):
+                    self._log.info(f"Received IOSetMessage: {msg.io_state:02x}")
+                    self.io_state = msg.io_state
 
             except Exception as e:
                 self._log.error(f"Error in message handler: {e}")
 
-    async def heartbeat_loop(self, delay: float = 0.1):
+    async def heartbeat_loop(self, delay: float = 0.1) -> None:
         """Send heartbeat message."""
         self._log.info("Starting heartbeat loop")
 
@@ -109,9 +116,9 @@ class ICUMockCAN:
             # Construct the heartbeat message
             heartbeat = canp.HeartbeatMessage(
                 device_type=DEVICE_TYPE,
-                error_max1=self.icumock.error_max1,
-                error_max2=self.icumock.error_max2,
-                io_state=self.icumock.io_state,
+                error_max1=self.error_max1,
+                error_max2=self.error_max2,
+                io_state=self._io_state,
                 errors=0,
                 counter=counter,  # Increment counter for each loop
             )
@@ -130,23 +137,15 @@ class ICUMockCAN:
 
     async def toggle_outputs(self):
         """Toggle the output pins."""
+        if not self._simulate_inputs:
+            return
+
         self._log.info("Starting output toggling loop")
 
         while True:
 
             # toggle bit 7
-            self.icumock.io_state ^= 0x80
-            # send message
-            arb_id, data_bytes = canp.encode_message(
-                canp.IOStateMessage(self.icumock.io_state), self.node_id
-            )
-
-            message = can.Message(
-                arbitration_id=arb_id,
-                data=data_bytes,
-                is_extended_id=False,
-            )
-            self._bus.send(message)
+            self.io_state ^= 0x80
 
             await asyncio.sleep(0.5)
 
@@ -169,7 +168,7 @@ class ICUMockCAN:
 
 def main(node_id: int = NODE_ID):
     try:
-        mock = ICUMockCAN(node_id)
+        mock = ICUMock(node_id)
         mock.start()
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt - shutting down ICU mock")
