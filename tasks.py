@@ -4,6 +4,8 @@ import time
 from click import prompt
 from invoke import task  # type: ignore
 
+CWD = os.path.dirname(os.path.realpath(__file__))
+
 
 def get_mount_point():
     mount_point = None
@@ -97,12 +99,20 @@ def ci(ctx):
     """
     t_start = time.time()
     # get script directory
-    script_dir = os.path.dirname(os.path.realpath(__file__))
+
     try:
-        ctx.run(f"docker run --rm -v {script_dir}:/workspace roxauto/python-ci")
+        ctx.run(f"docker run --rm -v {CWD}:/workspace roxauto/python-ci")
     finally:
         t_end = time.time()
         print(f"CI run took {t_end - t_start:.1f} seconds")
+
+
+@task
+def tox(ctx):
+    """run tox tests in a fresh container"""
+    ctx.run(
+        f"docker run --rm -it -v {CWD}:/app divio/multi-python:latest tox", pty=True
+    )
 
 
 @task
@@ -127,12 +137,11 @@ def build_package(ctx):
 @task
 def release(ctx):
     """publish package to pypi"""
-    script_dir = os.path.dirname(os.path.realpath(__file__))
 
     token = os.getenv("PYPI_TOKEN")
     if not token:
         raise ValueError("PYPI_TOKEN environment variable is not set")
 
     ctx.run(
-        f"docker run --rm -e PYPI_TOKEN={token} -v {script_dir}:/workspace roxauto/python-ci /scripts/publish.sh"
+        f"docker run --rm -e PYPI_TOKEN={token} -v {CWD}:/workspace roxauto/python-ci /scripts/publish.sh"
     )

@@ -1,5 +1,6 @@
 
-FROM roxauto/circuitpython:latest
+#FROM roxauto/circuitpython:latest
+FROM python:3.11
 ARG USERNAME=dev
 ARG UID=1000
 ARG GID=1000

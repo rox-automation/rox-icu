@@ -88,7 +88,7 @@ class ICUMockCAN:
                     continue
 
                 self._log.debug(
-                    f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(" ")}"
+                    f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(' ')}"
                 )
 
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
