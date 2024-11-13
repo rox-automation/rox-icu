@@ -12,7 +12,7 @@ authors = [
     {name = "ROX Automation", email = "jev@roxautomation.com"},
 ]
 license = {text = "MIT"}
-readme = "README.md"
+readme = "description.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
