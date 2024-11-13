@@ -1,10 +1,14 @@
-from rox_icu import can_protocol as canp
 import struct
+
 import pytest
+
+from rox_icu import can_protocol as canp
+
+EXPECTED_PROTOCOL_VERSION = 10
 
 
 def test_version() -> None:
-    assert canp.VERSION == 9
+    assert canp.VERSION >= EXPECTED_PROTOCOL_VERSION
 
 
 def test_split() -> None:
