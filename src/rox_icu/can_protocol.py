@@ -122,6 +122,7 @@ def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
     return arbitration_id, struct.pack(byte_def, *message)
 
 
+# Note: not using can.Message because it's not available in MicroPython
 def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     """Parse a message from raw data."""
     opcode = arb_id & 0x1F
