@@ -78,12 +78,16 @@ IOSetMessage = namedtuple("IOSetMessage", "io_state")
 
 # message: (opcode, byte_def)
 _MSG_DEFS = {
-    HaltMessage: (0, "<B"),
-    HeartbeatMessage: (1, "<BBBBBB"),
-    IOSetMessage: (2, "<B"),
-    IOStateMessage: (2, "<B"),
+    message_type: (opcode, byte_def)
+    for opcode, (message_type, byte_def) in enumerate(
+        [
+            (HaltMessage, "<B"),
+            (HeartbeatMessage, "<BBBBBB"),
+            (IOSetMessage, "<B"),
+            (IOStateMessage, "<B"),
+        ]
+    )
 }
-
 _OPCODE2MSG = {v[0]: k for k, v in _MSG_DEFS.items()}
 
 
