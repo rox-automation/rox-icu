@@ -31,25 +31,23 @@ class Device:
     is_icu: bool = False
     last_heartbeat: canp.HeartbeatMessage | None = None
 
-    def get_display_data(self) -> tuple:
-        """Get tuple of display values, handling unknown devices and message changes"""
+    def get_display_data(self) -> str:
+        """Get formatted string for display, handling unknown devices and message changes"""
         if not self.is_icu or self.last_heartbeat is None:
-            return (self.node_id, "--", "--", "--", "--", "--", "--")
+            return f"| {self.node_id:<6} | {'--':<7} | {'--':<7} | {'--':<7} | {'--':<8} | {'--':<6}| {'--':<7} |"
 
         hb = self.last_heartbeat
         # Convert io_state to binary string, pad to 8 bits
-        io_state_bin = format(hb.io_state, "08b")
+        io_state_bin = format(getattr(hb, "io_state", 0), "08b")
 
         # Use getattr with default to handle possible changes in heartbeat message
-        return (
-            self.node_id,
-            getattr(hb, "device_type", "--"),
-            getattr(hb, "error_max1", "--"),
-            getattr(hb, "error_max2", "--"),
-            io_state_bin,
-            getattr(hb, "errors", "--"),
-            getattr(hb, "counter", "--"),
-        )
+        dev_type = getattr(hb, "device_type", "--")
+        err1 = getattr(hb, "error_max1", "--")
+        err2 = getattr(hb, "error_max2", "--")
+        errors = getattr(hb, "errors", "--")
+        counter = getattr(hb, "counter", "--")
+
+        return f"| {self.node_id:<6} | {dev_type:<7} | {err1:<7} | {err2:<7} | {io_state_bin:<8} | 0x{errors:<4x}| {counter:<7} |"
 
 
 def handle_msg(msg: can.Message) -> None:
@@ -82,24 +80,13 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
     pad.erase()
 
     # Draw header
-    header = f"| {'NodeID':<6} | {'DevType':<7} | {'ErrMax1':<7} | {'ErrMax2':<7} | {'IO State':<8} | {'Errors':<6} | {'Counter':<7} |"
+    header = f"| {'NodeID':<6} | {'DevType':<7} | {'ErrMax1':<7} | {'ErrMax2':<7} | {'IO State':<8} | {'Error':<5} | {'Counter':<7} |"
     pad.addstr(0, 0, header)
     pad.addstr(1, 0, "-" * len(header))
 
     # Draw data
     for idx, (_, device) in enumerate(sorted(devices.items()), start=2):
-        # Get display values
-        (
-            node_id,
-            dev_type,
-            err1,
-            err2,
-            io_state,
-            errors,
-            counter,
-        ) = device.get_display_data()
-
-        row = f"| {node_id:<6} | {dev_type:<7} | {err1:<7} | {err2:<7} | {io_state:<8} | 0x{errors:<5x}| {counter:<7} |"
+        row = device.get_display_data()
         pad.addstr(idx, 0, row)
 
     # Calculate visible area
@@ -135,7 +122,7 @@ def main(stdscr: curses.window) -> None:
 
     except Exception as e:
         curses.endwin()
-        print(f"Error: {e}")
+        raise e
 
 
 if __name__ == "__main__":
