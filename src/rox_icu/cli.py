@@ -53,6 +53,14 @@ def monitor():
 
 
 @cli.command()
+def inspect():
+    """Inspect ICU messages on CAN bus (ignoring heartbeat)"""
+    from .inspector import main
+
+    run_main(main)
+
+
+@cli.command()
 @click.argument("hex_input")
 @click.option("--node-id", default=1, help="device ID")
 def output(hex_input: str, node_id: int):
