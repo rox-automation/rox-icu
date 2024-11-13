@@ -152,7 +152,7 @@ class ICU:
         self.check_alive()
 
         arb_id, msg_data = canp.encode_message(
-            canp.IOStateMessage(state), node_id=self._node_id
+            canp.IOSetMessage(state), node_id=self._node_id
         )
 
         self._bus.send(
@@ -175,6 +175,11 @@ class ICU:
             await asyncio.wait_for(self._heartbeat_event.wait(), timeout)
         except asyncio.TimeoutError as e:
             raise HeartbeatError("Timeout waiting for heartbeat") from e
+
+    @property
+    def last_heartbeat(self) -> canp.HeartbeatMessage | None:
+        """Get last heartbeat message"""
+        return self._last_heartbeat
 
     async def start(self) -> None:
         """Start driver"""
@@ -287,7 +292,6 @@ class ICU:
                     self._log.debug(f"heartbeat: {self._last_heartbeat}")
 
                 elif isinstance(msg, canp.IOStateMessage):
-                    msg = canp.IOStateMessage(*data)
                     self._uptate_io_state(msg.io_state)
 
             except asyncio.CancelledError:

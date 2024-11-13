@@ -45,6 +45,7 @@ def lint(ctx):
     """
     # ctx.run("ruff check src tests")
     ctx.run("pylint -E src", warn=True, pty=True)
+    ctx.run("pylint -E tests", warn=True, pty=True)
     ctx.run("mypy src", warn=True, pty=True)
 
 

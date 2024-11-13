@@ -83,8 +83,8 @@ _MSG_DEFS = {
         [
             (HaltMessage, "<B"),
             (HeartbeatMessage, "<BBBBBB"),
-            (IOSetMessage, "<B"),
             (IOStateMessage, "<B"),
+            (IOSetMessage, "<B"),
         ]
     )
 }

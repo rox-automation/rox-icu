@@ -168,7 +168,7 @@ class ICUMock:
 
 def main(node_id: int = NODE_ID):
     try:
-        mock = ICUMock(node_id)
+        mock = ICUMock(node_id, simulate_inputs=True)
         mock.start()
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt - shutting down ICU mock")
