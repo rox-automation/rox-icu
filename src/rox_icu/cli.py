@@ -61,9 +61,9 @@ def inspect():
 
 
 @cli.command()
+@click.argument("node_id", type=int)
 @click.argument("hex_input")
-@click.option("--node-id", default=1, help="device ID")
-def output(hex_input: str, node_id: int):
+def output(node_id: int, hex_input: str) -> None:
     """Set output state, provide hex value"""
     try:
         state = int(hex_input, 16)
