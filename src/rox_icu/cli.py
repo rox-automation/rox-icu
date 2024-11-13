@@ -27,13 +27,19 @@ def info() -> None:
 
 @cli.command()
 @click.option("--node-id", default=1, help="device ID")
+@click.option("--sim-inputs", is_flag=True, help="simulate inputs")
 def mock(
     node_id,
+    sim_inputs,
 ):
     """Mock ICU device on CAN bus"""
-    from .mock import main
+    from .mock import ICUMock
 
-    run_main(lambda: main(node_id=node_id))
+    def main() -> None:
+        dev = ICUMock(node_id, simulate_inputs=sim_inputs)
+        dev.start()
+
+    run_main(main)
 
 
 @cli.command()
