@@ -69,7 +69,7 @@ def output(hex_input: str, node_id: int):
     print(f"Setting ICU_{node_id} output state to {state:08b}")
 
     with get_can_bus() as bus:
-        arb_id, data = canp.encode_message(canp.IOStateMessage(state), node_id)
+        arb_id, data = canp.encode_message(canp.IOSetMessage(state), node_id)
         msg = can.Message(arbitration_id=arb_id, data=data, is_extended_id=False)
         bus.send(msg)
 
