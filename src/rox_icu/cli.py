@@ -64,7 +64,7 @@ def output(hex_input: str, node_id: int):
 
     with get_can_bus() as bus:
         arb_id, data = canp.encode_message(canp.IOStateMessage(state), node_id)
-        msg = can.Message(arbitration_id=arb_id, data=data)
+        msg = can.Message(arbitration_id=arb_id, data=data, is_extended_id=False)
         bus.send(msg)
 
 
