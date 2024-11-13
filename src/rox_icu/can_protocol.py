@@ -14,17 +14,7 @@ Message ID (11 bits):
 
 Message Types
 ------------
-HaltMessage:
-    Emergency halt command with IO state
-    Opcode: 0, Format: <B (uint8 io_state)
-
-HeartbeatMessage:
-    Periodic status update (100ms interval)
-    Opcode: 1, Format: <BBBBBB (device_type, error_max1, error_max2, io_state, device_state, counter)
-
-IOStateMessage:
-    IO state change notification
-    Opcode: 2, Format: <B (uint8 io_state)
+See the namedtuple definitions for message types.
 
 Usage Example
 -----------
@@ -44,6 +34,8 @@ Adding New Messages
 
 
 """
+import struct
+from collections import namedtuple
 
 try:
     from typing import TYPE_CHECKING
@@ -53,10 +45,8 @@ except ImportError:  # pragma: no cover
 if TYPE_CHECKING:
     from typing import Type, NamedTuple, Tuple  # pragma: no cover
 
-import struct
-from collections import namedtuple
 
-VERSION = 9
+VERSION = 10
 
 
 class DeviceState:
@@ -71,19 +61,26 @@ class DeviceState:
 HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io state.
 
 
-# opcode 1, normally sent every 100ms
+# normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
     ("device_type", "error_max1", "error_max2", "io_state", "errors", "counter"),
 )
 
-# opcode 2, sent on change or request
+# sent on change
 IOStateMessage = namedtuple("IOStateMessage", "io_state")
+
+# requist to change io state
+IOSetMessage = namedtuple("IOSetMessage", "io_state")
+
+
+# ----------------------------Internal lookup tables---------------------------
 
 # message: (opcode, byte_def)
 _MSG_DEFS = {
     HaltMessage: (0, "<B"),
     HeartbeatMessage: (1, "<BBBBBB"),
+    IOSetMessage: (2, "<B"),
     IOStateMessage: (2, "<B"),
 }
 
