@@ -11,9 +11,17 @@ from can.interfaces.udp_multicast import UdpMulticastBus
 from can.interfaces.socketcan import SocketcanBus
 
 
+def is_ci_environment() -> bool:
+    """Check if the code is running in a CI environment"""
+    return os.getenv("CI") == "true"
+
+
 def get_can_bus() -> UdpMulticastBus | SocketcanBus:
     """Get a CAN bus instance, using environment variables
-    CAN_CHANNEL and CAN_INTERFACE for configuration"""
+    CAN_CHANNEL and CAN_INTERFACE for configuration or a multicast bus in CI"""
+
+    if is_ci_environment():
+        return UdpMulticastBus("224.0.0.1", interface="udp_multicast")
 
     channel = os.getenv("CAN_CHANNEL")
     if channel is None:
