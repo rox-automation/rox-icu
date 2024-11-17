@@ -1,7 +1,9 @@
 import asyncio
-import pytest
-import aiomqtt
 import json
+
+import aiomqtt
+import pytest
+
 from rox_icu.mock import ICUMock
 
 NODE_ID = 10
