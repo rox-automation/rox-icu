@@ -1,10 +1,38 @@
 #!/usr/bin/env python3
 """
-ICU Mock CAN Interface
+ICU Mock CAN Interface Module
 
-This mock simulates the ICU (Integrated Control Unit) CAN interface,
-providing a virtual environment to test the Python driver for remote I/O
-functionalities.
+This module provides a mock implementation of the ICU (Integrated Control Unit) CAN interface.
+It simulates CAN-based remote I/O control for testing and development purposes, supporting message
+encoding/decoding, MQTT integration, and simulated I/O toggling.
+
+Key Features:
+- CAN communication simulation using `python-can`.
+- I/O state management with message broadcasting.
+- Heartbeat generation for system health monitoring.
+- MQTT command interface for remote I/O control.
+- Support for toggling outputs in a simulated environment.
+
+Classes:
+- ICUMock: Core class that simulates the ICU interface, providing methods for managing I/O states,
+  sending heartbeats, and handling CAN or MQTT messages.
+
+Functions:
+- main(node_id: int): Entry point for running the mock interface as a standalone application.
+
+MQTT Command Structure:
+The MQTT interface allows remote interaction with the ICU mock through structured JSON messages.
+Commands are published to the topic `/icu_mock/<node_id>/cmd` and must follow the format:
+```json
+{
+    "cmd": "<command_name>",
+    "args": {
+        "arg1": <value>,
+        "arg2": <value>,
+        ...
+    }
+}
+````
 
 
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
