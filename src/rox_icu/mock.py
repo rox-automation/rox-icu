@@ -17,6 +17,8 @@ import can
 from can.interfaces.socketcan import SocketcanBus
 from can.interfaces.udp_multicast import UdpMulticastBus
 
+import aiomqtt
+
 import rox_icu.can_protocol as canp
 from rox_icu.can_utils import get_can_bus
 from rox_icu.utils import run_main
@@ -34,11 +36,14 @@ if logger_can is not None:
 class ICUMock:
     """Class to mock the ICU CAN interface."""
 
+    MQTT_BASE_TOPIC = "/icu_mock"
+
     def __init__(
         self,
         node_id: int = NODE_ID,
         can_bus: SocketcanBus | UdpMulticastBus | None = None,
         simulate_inputs: bool = False,
+        mqtt_broker: str | None = None,  # use mqtt interface if provided
     ):
         self._log = logging.getLogger(f"icu.mock.{node_id}")
         self.node_id = node_id
@@ -52,6 +57,8 @@ class ICUMock:
         self._bus = can_bus or get_can_bus()
         self._can_reader = can.AsyncBufferedReader()
         self._notifier = can.Notifier(self._bus, [self._can_reader])
+
+        self._mqtt_broker = mqtt_broker
 
     @property
     def io_state(self):
@@ -149,12 +156,29 @@ class ICUMock:
 
             await asyncio.sleep(0.5)
 
+    async def mqtt_loop(self):
+        """handle mqtt interface if broker address is provided"""
+        if self._mqtt_broker is None:
+            self._log.info("No MQTT broker address provided, skipping MQTT loop")
+            return
+
+        self._log.info(f"Connecting to MQTT broker: {self._mqtt_broker}")
+        async with aiomqtt.Client(self._mqtt_broker) as client:
+
+            cmd_topic = f"{self.MQTT_BASE_TOPIC}/{self.node_id}/cmd"
+            self._log.info(f"Subscribing to MQTT topic: {cmd_topic}")
+
+            await client.subscribe(cmd_topic)
+            async for message in client.messages:
+                self._log.info(message.payload)
+
     async def main(self):
         """Main async loop for the ICU mock."""
         async with asyncio.TaskGroup() as tg:
             tg.create_task(self.heartbeat_loop())
             tg.create_task(self.message_handler())
             tg.create_task(self.toggle_outputs())
+            tg.create_task(self.mqtt_loop())
 
     def start(self):
         """Start the main loop."""
