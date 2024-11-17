@@ -11,17 +11,18 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
+import orjson
 import logging
 
+import aiomqtt
 import can
 from can.interfaces.socketcan import SocketcanBus
 from can.interfaces.udp_multicast import UdpMulticastBus
 
-import aiomqtt
-
 import rox_icu.can_protocol as canp
 from rox_icu.can_utils import get_can_bus
 from rox_icu.utils import run_main
+from rox_icu.bit_ops import set_bit, clear_bit
 
 # Constants for CAN messages
 NODE_ID = 0x01
@@ -81,6 +82,14 @@ class ICUMock:
             is_extended_id=False,
         )
         self._bus.send(message)
+
+    def set_pin(self, pin: int, state: bool) -> None:
+        """Set the state of a pin."""
+        self._log.info(f"Setting pin {pin} to {state}")
+        if state:
+            self._io_state = set_bit(self._io_state, pin)
+        else:
+            self._io_state = clear_bit(self._io_state, pin)
 
     def get_global_error(self) -> tuple[int, int]:
         """Return the error status of max1 and max2."""
@@ -165,12 +174,36 @@ class ICUMock:
         self._log.info(f"Connecting to MQTT broker: {self._mqtt_broker}")
         async with aiomqtt.Client(self._mqtt_broker) as client:
 
+            commands = {"set_pin": self.set_pin}
+
             cmd_topic = f"{self.MQTT_BASE_TOPIC}/{self.node_id}/cmd"
             self._log.info(f"Subscribing to MQTT topic: {cmd_topic}")
 
             await client.subscribe(cmd_topic)
             async for message in client.messages:
-                self._log.info(message.payload)
+                try:
+                    self._log.info(f"{message.topic=}, {message.payload=}")
+                    if not isinstance(message.payload, (str, bytes, bytearray)):
+                        raise TypeError(
+                            f"Unexpected payload type {type(message.payload)}"
+                        )
+
+                    payload = orjson.loads(message.payload)
+
+                    # command format {"cmd": "set_pin", "args: {"pin": 0, "state": 1}}
+                    cmd = payload["cmd"]
+                    args = payload["args"]
+
+                    if cmd not in commands:
+                        raise ValueError(f"Invalid command: {cmd}")
+
+                    commands[cmd](**args)
+
+                except (TypeError, orjson.JSONDecodeError) as e:
+                    self._log.error(f"Error decoding message {message.payload!r}: {e}")
+
+                except Exception as e:
+                    self._log.exception(e, exc_info=True)
 
     async def main(self):
         """Main async loop for the ICU mock."""
