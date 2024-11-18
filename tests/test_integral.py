@@ -7,7 +7,7 @@ import pytest
 from rox_icu.core import ICU
 from rox_icu.mock import ICUMock
 
-NODE_ID = 1
+NODE_ID = 42
 
 
 @pytest.mark.asyncio
