@@ -168,8 +168,7 @@ class ICUMock:
             # Construct the heartbeat message
             heartbeat = canp.HeartbeatMessage(
                 device_type=DEVICE_TYPE,
-                error_max1=self.error_max1,
-                error_max2=self.error_max2,
+                io_dir=0,  # All outputs
                 io_state=self._io_state,
                 errors=0,
                 counter=counter,  # Increment counter for each loop

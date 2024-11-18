@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from typing import Type, NamedTuple, Tuple  # pragma: no cover
 
 
-VERSION = 10
+VERSION = 11
 
 
 class DeviceState:
@@ -64,7 +64,7 @@ HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io stat
 # normally sent every 100ms
 HeartbeatMessage = namedtuple(
     "HeartbeatMessage",
-    ("device_type", "error_max1", "error_max2", "io_state", "errors", "counter"),
+    ("device_type", "io_dir", "io_state", "errors", "counter"),
 )
 
 # sent on change
@@ -82,7 +82,7 @@ _MSG_DEFS = {
     for opcode, (message_type, byte_def) in enumerate(
         [
             (HaltMessage, "<B"),
-            (HeartbeatMessage, "<BBBBBB"),
+            (HeartbeatMessage, "<BBBBB"),
             (IOStateMessage, "<B"),
             (IOSetMessage, "<B"),
         ]
