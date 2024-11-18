@@ -1,6 +1,6 @@
 import asyncio
 import json
-
+import os
 import aiomqtt
 import pytest
 
@@ -9,6 +9,7 @@ from rox_icu.mock import ICUMock
 NODE_ID = 10
 
 
+@pytest.mark.skipif(os.getenv("CI") is not None, reason="Skipped in CI environment")
 @pytest.mark.asyncio
 async def test_mqtt_commands():
 
