@@ -1,0 +1,27 @@
+# icu dev stack
+
+services:
+  # mqtt broker
+  mosquitto:
+    restart: unless-stopped
+    container_name: mosquitto
+    image: registry.gitlab.com/roxautomation/images/mosquitto:latest
+    ports:
+      - "1883:1883"
+
+  # bridge mqtt messages to websocket used by ui
+  bridge:
+    container_name: rox-bridge
+    image: roxauto/rox-bridge
+    network_mode: host
+    restart: unless-stopped
+
+  # development web-based ui
+  # ui:
+  #   restart: unless-stopped
+  #   container_name: icu-ui
+  #   image: httpd:2.4
+  #   ports:
+  #     - "8081:80"
+  #   volumes:
+  #     - ./ui:/usr/local/apache2/htdocs

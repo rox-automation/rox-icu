@@ -65,7 +65,7 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 4. sync code with the board `invoke sync`
 
 
-### Runng code
+### Runnig code
 
 First determine device serial port with `sudo dmesg | grep tty`
 
@@ -73,6 +73,10 @@ There use `ampy` or `mpremote`:
 
 *  `ampy run <script.py>` (set `AMPY_PORT` env variable first)
 *  `mpremote <port> run <script.py>` (use shortcuts for <port>, like `a1` for `/dev/ttyACM1` if required)
+
+### Development docker stack
+
+start dev stack with `docker-compose.yml`
 
 ### Pin mapping
 
