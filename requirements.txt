@@ -1,3 +1,4 @@
+aiomqtt
 click
-python-can
 coloredlogs
+python-can

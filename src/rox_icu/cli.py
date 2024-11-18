@@ -28,15 +28,17 @@ def info() -> None:
 @cli.command()
 @click.option("--node-id", default=1, help="device ID")
 @click.option("--sim-inputs", is_flag=True, help="simulate inputs")
+@click.option("--mqtt-broker", help="MQTT broker address", default=None)
 def mock(
-    node_id,
-    sim_inputs,
+    node_id: int,
+    sim_inputs: bool,
+    mqtt_broker: str | None,
 ):
     """Mock ICU device on CAN bus"""
     from .mock import ICUMock
 
     def main() -> None:
-        dev = ICUMock(node_id, simulate_inputs=sim_inputs)
+        dev = ICUMock(node_id, simulate_inputs=sim_inputs, mqtt_broker=mqtt_broker)
         dev.start()
 
     run_main(main)
