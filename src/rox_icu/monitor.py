@@ -34,20 +34,19 @@ class Device:
     def get_display_data(self) -> str:
         """Get formatted string for display, handling unknown devices and message changes"""
         if not self.is_icu or self.last_heartbeat is None:
-            return f"| {self.node_id:<6} | {'--':<7} | {'--':<7} | {'--':<7} | {'--':<8} | {'--':<6}| {'--':<7} |"
+            return f"| {self.node_id:<6} | {'--':<7} | {'--':<7} |  {'--':<8} | {'--':<6}| {'--':<7} |"
 
         hb = self.last_heartbeat
         # Convert io_state to binary string, pad to 8 bits
         io_state_bin = format(getattr(hb, "io_state", 0), "08b")
+        io_dir_bin = format(getattr(hb, "io_dir", 0), "08b")
 
         # Use getattr with default to handle possible changes in heartbeat message
         dev_type = getattr(hb, "device_type", "--")
-        err1 = getattr(hb, "error_max1", "--")
-        err2 = getattr(hb, "error_max2", "--")
         errors = getattr(hb, "errors", "--")
         counter = getattr(hb, "counter", "--")
 
-        return f"| {self.node_id:<6} | {dev_type:<7} | {err1:<7} | {err2:<7} | {io_state_bin:<8} | 0x{errors:<4x}| {counter:<7} |"
+        return f"| {self.node_id:<6} | {dev_type:<7} | {io_dir_bin:<7} | {io_state_bin:<8} | 0x{errors:<4x}| {counter:<7} |"
 
 
 def handle_msg(msg: can.Message) -> None:
@@ -80,7 +79,7 @@ def draw_table(pad: curses.window, screen: curses.window) -> None:
     pad.erase()
 
     # Draw header
-    header = f"| {'NodeID':<6} | {'DevType':<7} | {'ErrMax1':<7} | {'ErrMax2':<7} | {'IO State':<8} | {'Error':<5} | {'Counter':<7} |"
+    header = f"| {'NodeID':<6} | {'DevType':<7} | {'IO Dir':<8} | {'IO State':<8} | {'Error':<4} | {'Counter':<7} |"
     pad.addstr(0, 0, header)
     pad.addstr(1, 0, "-" * len(header))
 
