@@ -32,7 +32,7 @@ async def send_messages(bus) -> None:
     io_state = 0
 
     try:
-        for i in range(256):
+        for _ in range(256):
             io_msg = canp.IOStateMessage(io_state)
 
             arb_id, data = canp.encode_message(io_msg, NODE_ID)
