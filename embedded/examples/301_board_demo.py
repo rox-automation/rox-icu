@@ -1,8 +1,8 @@
-# ECU board demo
+#!/usr/bin/env python3
+"""ECU board demo with button, sensor, LED, relay and CAN control"""
 import asyncio
 import gc
 import struct
-
 import analogio  # pylint: disable=import-error
 import canio  # pylint: disable=import-error
 from icu_board import (
@@ -18,144 +18,110 @@ from icu_board import (
     rgb_led,
 )
 
-VERSION = "0.2"
-
-maxio.DEBUG = False  # print debug info
-
-# --------define pins and peripherals--------
-sensor = D_PINS[0]
-sensor.switch_to_input()
-
-button = D_PINS[7]
-button.switch_to_input()
-
-relay = D_PINS[6]
-
-rgb_led.brightness = 0.1
-rgb_led.fill((0, 0, 255))
-
-# --------initialize system--------
-
-button_pressed = asyncio.Event()
-
-nr_button_presses = 0
-nr_sensor_triggers = 0
+VERSION = "0.3"
+BUTTON_POLL_INTERVAL = 0.01
+LED_FLASH_INTERVAL = 0.2
+RELAY_HOLD_TIME = 1.0
 
 
-# read all max registers
-for drv in [max1, max2]:
-    print("chip address:", drv.chip_address)
-    drv.print_registers()
+def init_system():
+    maxio.DEBUG = False
+    max_enable.value = True
+    rgb_led.brightness = 0.1
+    rgb_led.fill((0, 0, 255))
 
-print(48 * "-")
+    for drv in [max1, max2]:
+        print(f"chip address: {drv.chip_address}")
+        drv.print_registers()
 
-print(f"Board demo v {VERSION} ")
+    print(f"Board demo v {VERSION}")
 
-# turn max on
-max_enable.value = True  # enable in- and outputs
+
+def init_pins():
+    sensor = D_PINS[0]
+    sensor.switch_to_input()
+    button = D_PINS[7]
+    button.switch_to_input()
+    return sensor, button
 
 
 async def flash_leds() -> None:
     while True:
         led1.value = not led1.value
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(LED_FLASH_INTERVAL)
 
 
-async def read_button() -> None:
+async def read_button(button, button_pressed: asyncio.Event, stats: dict) -> None:
     prev_val = False
-
-    global nr_button_presses
-
     while True:
         val = button.value
-        if val != prev_val and val:
-            nr_button_presses += 1
-            print(f"Button pressed {nr_button_presses} times")
+        if val and val != prev_val:
+            stats["button_presses"] += 1
+            print(f"Button pressed {stats['button_presses']} times")
             button_pressed.set()
         prev_val = val
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(BUTTON_POLL_INTERVAL)
 
 
-async def read_inductive_sensor() -> None:
-    global nr_sensor_triggers
-
+async def read_sensor(sensor, output_pin, stats: dict) -> None:
     prev_val = False
-
-    output = D_PINS[4]
-
     while True:
         val = sensor.value
-        output.value = val
-        if val != prev_val and val:
-            nr_sensor_triggers += 1
-            print(f"Inductive sensor triggered {nr_sensor_triggers} times")
+        output_pin.value = val
+        if val and val != prev_val:
+            stats["sensor_triggers"] += 1
+            print(f"Inductive sensor triggered {stats['sensor_triggers']} times")
         prev_val = val
         await asyncio.sleep(0)
 
 
 async def handle_analog() -> None:
-    """read analog inputs and set nepixel colors"""
-
-    AIN1 = analogio.AnalogIn(Pins.A0)
-    AIN2 = analogio.AnalogIn(Pins.A1)
-
-    c_offset = 700
-    c_range = 47915 - c_offset
-
-    rgb = [0, 0, 0]
-
+    ain1 = analogio.AnalogIn(Pins.A0)
+    ain2 = analogio.AnalogIn(Pins.A1)
+    offset = 700
+    range_val = 47915 - offset
     counter = 0
 
     while True:
-        for idx, a in enumerate([AIN1, AIN2]):
-            adc_val = a.value
-            pct = max(0, min(100, ((adc_val - c_offset) / c_range) * 100))
-
-            rgb[idx] = int(pct * 2.55)
-
+        rgb = [
+            int(max(0, min(100, ((ain.value - offset) / range_val) * 100)) * 2.55)
+            for ain in [ain1, ain2]
+        ]
         rgb_led.fill((rgb[0], 0, rgb[1]))
+
         counter += 1
         if counter % 10 == 0:
             led2.value = not led2.value
         await asyncio.sleep(0)
 
 
-async def handle_outputs() -> None:
-    """perform output actions"""
-
-    output = D_PINS[5]
-    output.value = False
-
+async def handle_outputs(output_pin, relay_pin, button_pressed: asyncio.Event) -> None:
+    output_pin.value = False
     while True:
         await button_pressed.wait()
         print("Button pressed, toggling outputs")
         button_pressed.clear()
 
-        # flash output
         for _ in range(10):
-            output.value = not output.value
+            output_pin.value = not output_pin.value
             await asyncio.sleep(0.1)
+        output_pin.value = False
 
-        output.value = False
-
-        relay.value = True
-        await asyncio.sleep(1.0)
-        relay.value = False
+        relay_pin.value = True
+        await asyncio.sleep(RELAY_HOLD_TIME)
+        relay_pin.value = False
 
 
-async def send_can_messages() -> None:
-    """send counter and number of button presses and sensor triggers over CAN"""
+async def send_can_messages(scope_pin, stats: dict) -> None:
     counter = 0
-    scope_pin = max2.d_pins[2]
-
     while True:
         message = canio.Message(
             id=0x01,
             data=struct.pack(
                 "<BBB",
                 counter & 0xFF,
-                nr_button_presses & 0xFF,
-                nr_sensor_triggers & 0xFF,
+                stats["button_presses"] & 0xFF,
+                stats["sensor_triggers"] & 0xFF,
             ),
         )
         can.send(message)
@@ -166,16 +132,21 @@ async def send_can_messages() -> None:
 
 
 async def main() -> None:
+    init_system()
+    sensor, button = init_pins()
+
+    button_pressed = asyncio.Event()
+    stats = {"button_presses": 0, "sensor_triggers": 0}
+
     await asyncio.gather(
         flash_leds(),
-        read_button(),
+        read_button(button, button_pressed, stats),
         handle_analog(),
-        handle_outputs(),
-        read_inductive_sensor(),
-        send_can_messages(),
+        handle_outputs(D_PINS[5], D_PINS[6], button_pressed),
+        read_sensor(sensor, D_PINS[4], stats),
+        send_can_messages(max2.d_pins[2], stats),
     )
 
 
-# ---------main code----------
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
