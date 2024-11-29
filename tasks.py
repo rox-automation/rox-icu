@@ -15,8 +15,7 @@ def get_mount_point():
             print(f"CIRCUITPY mount point found: {mount_point}")
             return mount_point
 
-    if mount_point is None:
-        raise FileNotFoundError("CIRCUITPY mount point not found")
+    raise FileNotFoundError("CIRCUITPY mount point not found")
 
 
 @task
@@ -61,6 +60,19 @@ def test(ctx):
 def install(ctx):
     """install dependencies"""
     ctx.run("circup install -r cpy_requirements.txt")
+
+
+@task
+def find_device(ctx):
+    """find the device mount point"""
+    try:
+        cpy = get_mount_point()
+        print(f"Device found at {cpy}")
+
+        # show tree of the device
+        ctx.run(f"tree {cpy}")
+    except FileNotFoundError:
+        print("Device not found")
 
 
 @task
