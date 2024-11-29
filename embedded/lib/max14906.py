@@ -1,8 +1,9 @@
 # driver for max chips on ROX-ECU board
+import os
 from digitalio import DigitalInOut
 import busio
 
-DEBUG = False  # set to True  for verbose output
+DEBUG = bool(os.getenv("DEBUG", 0))  # pylint: disable=W1508
 
 
 # ----------------- Max registers
@@ -130,6 +131,41 @@ class Max14906:
         # set SetDi bit
         self.set_bit(REGISTERS.SET_OUT, d_pin_nr + 4, True)
 
+    def set_output_mode(self, pin: int, mode: int) -> None:
+        """
+        Set the output mode for a specific digital output pin (DO1-DO4).
+
+        Args:
+            pin (int): Pin number (0–3 for DO1–DO4).
+            mode (int): Mode value (0–3).
+                00: High-side
+                01: High-side with 2x inrush current for tINRUSH time
+                10: Active-clamp push-pull
+                11: Simple push-pull
+        """
+        if pin < 0 or pin > 3:
+            raise ValueError("Pin number must be between 0 and 3.")
+        if mode < 0 or mode > 3:
+            raise ValueError("Mode must be between 0 and 3.")
+
+        # Read current CONFIG_DO register value
+        config_do = self.read_register(REGISTERS.CONFIG_DO)[1]
+
+        # Calculate the bit positions for the pin
+        bit_pos = pin * 2  # Each pin uses 2 bits
+
+        # Clear the current mode bits for the pin
+        config_do &= ~(0b11 << bit_pos)
+
+        # Set the new mode bits for the pin
+        config_do |= mode << bit_pos
+
+        # Write the updated value back to the CONFIG_DO register
+        self.write_register(REGISTERS.CONFIG_DO, config_do)
+
+        if DEBUG:
+            print(f"Set DO{pin+1} mode to {mode:02b} (register value: {config_do:08b})")
+
     def read_register(self, reg: int) -> bytearray:
         """single cycle read"""
         mosi_byte = (self.chip_address << 6) | (reg << 1) & 0xFE
@@ -173,12 +209,12 @@ class Max14906:
 
     def print_registers(self) -> None:
         """print all register values"""
-        global DEBUG
+        global DEBUG  # pylint: disable=global-statement
 
         debug_bck = DEBUG
         DEBUG = True
 
-        for name, reg in REGISTERS.get_registers():
+        for _, reg in REGISTERS.get_registers():
             self.read_register(reg)
 
         DEBUG = debug_bck

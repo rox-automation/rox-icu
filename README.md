@@ -40,29 +40,63 @@ VDD Detection
 The ROX ICU is designed for decentralized control in mobile machinery and as a PLC replacement in challenging environments. It combines the accessibility of the Feather ecosystem with industrial-grade capabilities, offering a versatile solution for modern industrial control applications.
 
 
+## Required tools
+
+* `mpremote`
+* `circup`
+* `invoke`
 
 
-## What goes where
+## Repository structure
+
+### Embedded code
+
+* located in `embedded` folder.
+* use `invoke` (`tasks.py`) in that folder to manage device.
 
 
-* `libraries` - board libraries
-* `pcb` - hardware documentation
-* `examples` - code examples
+
+### PC code
+
+This repository is a conventional python package that can be installed with pip.
+`pyproject.toml` is main project file
+
+
 
 
 ## Getting started
 
+**note:** This guide is is for Linux systems. If you are using Windows, these instructions should be useable in WSL, no guarantees however.
+
+
 **note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
+
+
+
+
+## Working with device
+
+Most desktop distributions automatically mount the device under `/media/<user>/CIRCUITPY`.
+
+if not automatically mounted, use `./mount_device.sh` script.
+
+
+### Clean filesystem
+
+to completely erase the device run
+
+    import storage; storage.erase_filesystem()
+
+see also [Troubleshooting](https://docs.circuitpython.org/en/latest/docs/troubleshooting.html)
 
 
 ### Installation
 
-1. install dev tooling on the *host system* with `pip install -r requirements.txt` or create virtual invironment with `prepare_host.sh`
-2. install circuitpython on the board
+1. install circuitpython on the board
     - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
     - put `.uf2` file on the drive, it should reboot into circuitpython.
-3. install required libaries on the board with `invoke install`
-4. sync code with the board `invoke sync`
+2. cd to `embedded` folder.
+3. use `invoke -l` to show available management commands
 
 
 ### Runnig code

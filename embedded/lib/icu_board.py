@@ -192,6 +192,19 @@ class D_Pin:
     def switch_to_input(self) -> None:
         self.chip.switch_to_input(self.pin_nr)
 
+    def set_output_mode(self, mode: int) -> None:
+        """
+        Set the output mode
+
+        Args:
+            mode (int): Mode value (0–3).
+                00: High-side
+                01: High-side with 2x inrush current for tINRUSH time
+                10: Active-clamp push-pull
+                11: Simple push-pull
+        """
+        self.chip.set_output_mode(self.pin_nr, mode)
+
     @property
     def value(self) -> bool:
         return self.chip.d_pins[self.pin_nr].value
@@ -213,7 +226,4 @@ class D_Pin:
         return f"D_Pin({self.chip.chip_address}, {self.pin_nr},{dir_sign})"
 
 
-D_PINS: list[D_Pin] = []
-for max_chip in [max2, max1]:
-    for pin_nr in range(4):
-        D_PINS.append(D_Pin(max_chip, pin_nr))
+D_PINS = [D_Pin(max_chip, pin_nr) for max_chip in [max2, max1] for pin_nr in range(4)]

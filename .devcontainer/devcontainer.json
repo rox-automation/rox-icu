@@ -18,9 +18,9 @@
   "postCreateCommand": ".devcontainer/init_container.sh",
   // set env variables
   "containerEnv": {
-    "PYTHONPATH": "${containerWorkspaceFolder}/embedded_lib",
-    "CAN_CHANNEL": "224.0.0.1",
-    "CAN_INTERFACE": "udp_multicast"
+    "PYTHONPATH": "${containerWorkspaceFolder}/embedded/lib",
+    "CAN_CHANNEL": "${localEnv:CAN_CHANNEL}", // 223.0.0.1 or vcan0
+    "CAN_INTERFACE": "${localEnv:CAN_INTERFACE}" // udp_multicast or socketcan
   },
   // Configure tool-specific properties.
   "customizations": {

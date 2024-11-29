@@ -33,6 +33,8 @@ Adding New Messages
 3. Byte definition uses struct format chars (B=uint8, H=uint16, etc.)
 
 
+TODO: implement Set/Get parameter for generic message passing
+
 """
 import struct
 from collections import namedtuple
