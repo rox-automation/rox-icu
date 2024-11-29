@@ -19,13 +19,10 @@ while True:
     led.value = not led.value
 
     # Toggle the NeoPixel between green and off
-    if pixel[0] == (0, 0, 0):
-        pixel[0] = (0, 255, 0)  # Green
-    else:
-        pixel[0] = (0, 0, 0)    # Off
-
+    pixel[0] = (0, 255, 0)  # Green
+    time.sleep(1)
+    pixel[0] = (255, 0, 0)  # Off
+    time.sleep(1)
     # Print the counter
     print(f"Counter: {counter}")
     counter += 1
-
-    time.sleep(1)  # Delay for 1 second
