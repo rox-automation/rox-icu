@@ -40,19 +40,42 @@ VDD Detection
 The ROX ICU is designed for decentralized control in mobile machinery and as a PLC replacement in challenging environments. It combines the accessibility of the Feather ecosystem with industrial-grade capabilities, offering a versatile solution for modern industrial control applications.
 
 
+## Repository structure
+
+### Embedded code
+
+* `embedded` - code to run on device, each project has it's own folder.
+* `embedded/lib` - common library code, symlinked to individual projects
+* `embedded/examples` - example code
+
+### PC code
+
+This repository is a conventional python package that can be installed with pip.
+`pyproject.toml` is main project file
 
 
-## What goes where
-
-
-* `libraries` - board libraries
-* `pcb` - hardware documentation
-* `examples` - code examples
 
 
 ## Getting started
 
+**note:** This guide is is for Linux systems. If you are using Windows, these instructions should be useable in WSL, no guarantees however.
+
+
 **note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
+
+## Preparation
+
+1. create virtual invironment and install required tools with `prepare_host.sh`
+2. activate with `source venv/bin/activate`
+
+
+## Mounting device
+
+Most desktop distributions automatically mount the device under `/media/<user>/CIRCUITPY`.
+
+* check if device can be found with `invoke find-device`
+* if not automatically mounted, use `./mount_device.sh` script.
+
 
 
 ### Installation
