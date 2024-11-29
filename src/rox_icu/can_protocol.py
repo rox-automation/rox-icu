@@ -48,14 +48,7 @@ if TYPE_CHECKING:
     from typing import Type, NamedTuple, Tuple  # pragma: no cover
 
 
-VERSION = 11
-
-
-class DeviceState:
-    """Device state flags"""
-
-    STOPPED = 0
-    RUNNING = 1
+VERSION = 12
 
 
 # ----------------------------Message Definitions----------------------------
