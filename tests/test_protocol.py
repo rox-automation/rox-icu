@@ -100,3 +100,17 @@ def test_pack_unpack() -> None:
     # convert back
     msg2 = canp.decode_message(msg_id, data_bytes)
     assert msg == msg2
+
+
+def test_set_param() -> None:
+    """set parameter message"""
+
+    param_id, _ = canp.device_parameters["test_param"]
+    canp.ParameterMessage(param_id, canp.Operation.GET, 0x1234)
+
+    # data type
+    assert canp.params_by_id[param_id][1] == canp.UINT32
+
+    # pack
+    _, data_bytes = canp.encode_parameter_message("test_param", canp.Operation.GET, 1)
+    assert data_bytes == b"\xff\x00\x01\x00\x00\x00"
