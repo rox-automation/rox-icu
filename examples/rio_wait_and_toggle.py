@@ -35,12 +35,9 @@ async def handle_input() -> None:
     log.info("Starting input handler")
 
     while True:
-        log.info("Waiting for low state")
-        await sensor.low_event.wait()
+        log.info("Waiting for sensor")
+        await sensor.high_event.wait()
         log.info(f"Sensor state: {sensor.state}")
-
-        # debounce, transition only valid if low for 300ms
-        # TODO: add debounce to the library
 
         asyncio.create_task(actuate_relay())
 
@@ -49,7 +46,9 @@ async def main() -> None:
     await icu.start()
 
     try:
-        await handle_input()
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(handle_input())
+
     finally:
         await icu.stop()
         print("Done")
