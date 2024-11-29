@@ -6,10 +6,10 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-import analogio
 import math
 
-from icu_board import rgb_led, led1, led2, D_PINS, max_enable, Pins
+import analogio  # pylint: disable=import-error
+from icu_board import D_PINS, Pins, led1, led2, max_enable, rgb_led
 
 max_enable.value = True  # enable the MAX14906 chips
 
