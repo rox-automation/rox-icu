@@ -53,4 +53,4 @@ def init(ctx):
     mount_point = get_mount_point()
 
     # Copy the main code
-    ctx.run(f"cp examples/hello_feather.py {mount_point}/code.py")
+    ctx.run(f"cp examples/hello_feather.py {mount_point}/main.py")
