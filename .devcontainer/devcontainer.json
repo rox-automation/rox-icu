@@ -18,7 +18,7 @@
   "postCreateCommand": ".devcontainer/init_container.sh",
   // set env variables
   "containerEnv": {
-    "PYTHONPATH": "${containerWorkspaceFolder}/embedded_lib",
+    "PYTHONPATH": "${containerWorkspaceFolder}/embedded/lib",
     "CAN_CHANNEL": "224.0.0.1",
     "CAN_INTERFACE": "udp_multicast"
   },

@@ -1,15 +1,40 @@
 # ECU board demo
-import struct
 import asyncio
-import analogio
-import canio
 import gc
+import struct
 
-from icu_board import Pins, rgb_led, led1, led2, maxio, max1, max2, max_enable, can
+import analogio  # pylint: disable=import-error
+import canio  # pylint: disable=import-error
+from icu_board import (
+    D_PINS,
+    Pins,
+    can,
+    led1,
+    led2,
+    max1,
+    max2,
+    max_enable,
+    maxio,
+    rgb_led,
+)
 
+VERSION = "0.2"
 
 maxio.DEBUG = False  # print debug info
 
+# --------define pins and peripherals--------
+sensor = D_PINS[0]
+sensor.switch_to_input()
+
+button = D_PINS[7]
+button.switch_to_input()
+
+relay = D_PINS[6]
+
+rgb_led.brightness = 0.1
+rgb_led.fill((0, 0, 255))
+
+# --------initialize system--------
 
 button_pressed = asyncio.Event()
 
@@ -17,31 +42,17 @@ nr_button_presses = 0
 nr_sensor_triggers = 0
 
 
-def init_system() -> None:
-    maxio.DEBUG = True
+# read all max registers
+for drv in [max1, max2]:
+    print("chip address:", drv.chip_address)
+    drv.print_registers()
 
-    rgb_led.brightness = 0.1
-    rgb_led.fill((0, 0, 255))
+print(48 * "-")
 
-    # set in- and outputs
-    max1.switch_to_input(3)
-    assert max1.read_register(maxio.REGISTERS.SET_OUT)[1] == 0x80
+print(f"Board demo v {VERSION} ")
 
-    max2.switch_to_input(0)
-    assert max2.read_register(maxio.REGISTERS.SET_OUT)[1] == 0x10
-
-    # maxio.write_register(maxio.REGISTERS.SET_OUT, 0x80, 0)
-    # maxio.write_register(maxio.REGISTERS.SET_OUT, 0x10, 1)
-
-    # read all max registers
-    for drv in [max1, max2]:
-        print("chip address:", drv.chip_address)
-        drv.print_registers()
-
-    print(48 * "-")
-
-    # turn max on
-    max_enable.value = True  # enable in- and outputs
+# turn max on
+max_enable.value = True  # enable in- and outputs
 
 
 async def flash_leds() -> None:
@@ -54,7 +65,6 @@ async def read_button() -> None:
     prev_val = False
 
     global nr_button_presses
-    button = max1.d_pins[3]
 
     while True:
         val = button.value
@@ -71,10 +81,10 @@ async def read_inductive_sensor() -> None:
 
     prev_val = False
 
-    output = max1.d_pins[0]
+    output = D_PINS[4]
 
     while True:
-        val = max2.d_pins[0].value
+        val = sensor.value
         output.value = val
         if val != prev_val and val:
             nr_sensor_triggers += 1
@@ -113,10 +123,8 @@ async def handle_analog() -> None:
 async def handle_outputs() -> None:
     """perform output actions"""
 
-    output = max1.d_pins[1]  # attached led
+    output = D_PINS[5]
     output.value = False
-
-    relay = max1.d_pins[2]
 
     while True:
         await button_pressed.wait()
@@ -170,6 +178,4 @@ async def main() -> None:
 
 # ---------main code----------
 
-
-init_system()
 asyncio.run(main())
