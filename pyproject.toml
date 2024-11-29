@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rox-icu"
 dynamic = ["dependencies", "optional-dependencies","version"]
-description = "grated control unit"
+description = "Integrated control unit"
 authors = [
     {name = "ROX Automation", email = "jev@roxautomation.com"},
 ]
