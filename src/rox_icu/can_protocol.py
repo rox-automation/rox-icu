@@ -1,45 +1,39 @@
 #!/usr/bin/env python3
 # Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
-ROX CAN Protocol Implementation
+ROX-ICU CAN Protocol Implementation
 
-A lightweight CAN (Controller Area Network) protocol implementation for ROX devices,
-compatible with both CPython and MicroPython for embedded systems use.
+Works both in MicroPython and CPython.
 
-Protocol Structure
-----------------
-Message ID (11 bits):
-    - Node ID: Upper 6 bits (0-63, node 0 reserved for broadcast)
-    - Command ID: Lower 5 bits (0-31)
+Key Features:
+-------------
+- Compatible with fixed-length and variable-length message formats.
+- Dynamic support for parameter-based messages, with `ParameterMessage`.
+- Uses an 11-bit structured message ID for efficient communication:
+  - Upper 6 bits: Node ID (0-63, with 0 reserved for broadcast)
+  - Lower 5 bits: Command ID (0-31)
 
-Message Types
-------------
-See the namedtuple definitions for message types.
+Message Types:
+--------------
+- **HaltMessage**: Halts operations with a specific IO state.
+- **HeartbeatMessage**: Provides periodic status updates, including device type, IO state, errors, and a counter.
+- **IoStateMessage**: Reports or sets IO state changes.
+- **ParameterMessage**: Handles parameter updates or retrievals using a flexible format.
 
-Usage Example
------------
->>> # Create and encode a message
->>> msg = HeartbeatMessage(device_type=1, error_max1=0, error_max2=0,
-...                       io_state=1, device_state=0, counter=0)
->>> arb_id, data = encode_message(msg, node_id=1)
->>>
->>> # Decode received message
->>> decoded_msg = decode_message(arb_id, data)
+Adding Custom Messages:
+-----------------------
+1. Define the message using a `namedtuple` or a custom class.
+2. Register the message type in the `_MSG_DEFS` dictionary with an associated opcode and format.
+3. Define the data structure using `struct` format characters (e.g., `B=uint8`, `H=uint16`).
 
-Adding New Messages
------------------
-1. Define message structure using namedtuple
-2. Add entry to _MSG_DEFS with (opcode, byte_definition)
-3. Byte definition uses struct format chars (B=uint8, H=uint16, etc.)
-
-
-TODO: implement Set/Get parameter for generic message passing
 
 """
+
+
 import struct
 from collections import namedtuple
 
-try:
+try:  # circuitpython does not have typing module
     from typing import TYPE_CHECKING
 except ImportError:  # pragma: no cover
     TYPE_CHECKING = False
@@ -48,14 +42,40 @@ if TYPE_CHECKING:
     from typing import Type, NamedTuple, Tuple  # pragma: no cover
 
 
-VERSION = 11
+VERSION = 12
 
 
-class DeviceState:
-    """Device state flags"""
+# -----------------Data Types-----------------
+# See https://docs.python.org/3/library/struct.html#format-characters
 
-    STOPPED = 0
-    RUNNING = 1
+BOOL = "?"
+UINT8 = "B"
+INT8 = "b"
+UINT16 = "H"
+INT16 = "h"
+UINT32 = "I"
+INT32 = "i"
+FLOAT = "f"
+
+
+class Operation:
+    """Operation types for parameter messages."""
+
+    GET = 0
+    SET = 1
+
+
+# Define parameters as a dictionary {name: (param_id, byte_def)}
+device_parameters = {
+    "io_state": (0, ord(UINT8)),
+    "device_state": (1, ord(UINT8)),
+    "error_max1": (2, ord(UINT8)),
+    "error_max2": (3, ord(UINT8)),
+    "test_param": (255, ord(UINT32)),
+}
+
+# Create reverse lookup by ID {param_id: byte_def}
+params_byte_defs = {param[0]: param[1] for _, param in device_parameters.items()}
 
 
 # ----------------------------Message Definitions----------------------------
@@ -69,11 +89,13 @@ HeartbeatMessage = namedtuple(
     ("device_type", "io_dir", "io_state", "errors", "counter"),
 )
 
-# sent on change
-IOStateMessage = namedtuple("IOStateMessage", "io_state")
+# io (op, io_state), use RTR for get
+IoStateMessage = namedtuple("IoStateMessage", ("op", "io_state"))
 
-# requist to change io state
-IOSetMessage = namedtuple("IOSetMessage", "io_state")
+
+# device parameter message, (id, op, datatype, value), use RTR for get
+# datatype is int derived from struct format character (e.g. ord('I') for UINT32)
+ParameterMessage = namedtuple("ParameterMessage", ("param_id", "op", "dtype", "value"))
 
 
 # ----------------------------Internal lookup tables---------------------------
@@ -85,8 +107,8 @@ _MSG_DEFS = {
         [
             (HaltMessage, "<B"),
             (HeartbeatMessage, "<BBBBB"),
-            (IOStateMessage, "<B"),
-            (IOSetMessage, "<B"),
+            (IoStateMessage, "<BB"),
+            (ParameterMessage, None),  # variable length
         ]
     )
 }
@@ -113,14 +135,20 @@ def get_node_id(message_id: int) -> int:
 
 def get_opcode_and_bytedef(message_class: "Type[NamedTuple]") -> "Tuple[int, str]":
     """Get the opcode for a message type."""
+
     return _MSG_DEFS[message_class]  # type: ignore
 
 
 def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
     """Pack a message into arbitration ID and data bytes.
     returns: (arbitration_id, data_bytes)"""
+
     opcode, byte_def = get_opcode_and_bytedef(type(message))
     arbitration_id = generate_message_id(node_id, opcode)
+
+    if isinstance(message, ParameterMessage):  # custom byte_def for variable length
+        byte_def = "<BBB" + chr(message.dtype)
+
     return arbitration_id, struct.pack(byte_def, *message)
 
 
@@ -129,4 +157,11 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     """Parse a message from raw data."""
     opcode = arb_id & 0x1F
     message_class = _OPCODE2MSG[opcode]
-    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))
+
+    if message_class == ParameterMessage:
+        param_id, op, dtype = data[:3]
+        value = struct.unpack(chr(dtype), data[3:])[0]
+
+        return ParameterMessage(param_id, op, dtype, value)
+
+    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore

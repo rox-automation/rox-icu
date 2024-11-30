@@ -4,11 +4,11 @@ import pytest
 
 from rox_icu import can_protocol as canp
 
-EXPECTED_PROTOCOL_VERSION = 11
+EXPECTED_PROTOCOL_VERSION = 12
 
 
 def test_version() -> None:
-    assert canp.VERSION >= EXPECTED_PROTOCOL_VERSION
+    assert canp.VERSION == EXPECTED_PROTOCOL_VERSION
 
 
 def test_split() -> None:
@@ -99,4 +99,47 @@ def test_pack_unpack() -> None:
 
     # convert back
     msg2 = canp.decode_message(msg_id, data_bytes)
+    assert msg == msg2
+
+
+def test_get_param() -> None:
+    """set parameter message"""
+
+    param_id, _ = canp.device_parameters["test_param"]
+
+    # data type
+    assert canp.params_byte_defs[param_id] == ord(canp.UINT32)
+
+    msg = canp.ParameterMessage(param_id, 1, ord("B"), 0xFF)
+
+    # pack
+    _, data_bytes = canp.encode_message(msg, 1)
+    assert data_bytes == b"\xFF\x01\x42\xFF"
+
+
+def test_param() -> None:
+
+    param_id, dtype = canp.device_parameters["test_param"]
+    msg = canp.ParameterMessage(param_id, 0, dtype, 1234)
+
+    assert msg.value == 1234
+
+    arb_id, data_bytes = canp.encode_message(msg, 1)
+
+    msg2 = canp.decode_message(arb_id, data_bytes)
+
+    assert msg == msg2
+
+
+def test_set_param() -> None:
+
+    param_id, dtype = canp.device_parameters["test_param"]
+    msg = canp.ParameterMessage(param_id, 1, dtype, 1234)
+
+    assert msg.value == 1234
+
+    arb_id, data_bytes = canp.encode_message(msg, 1)
+
+    msg2 = canp.decode_message(arb_id, data_bytes)
+
     assert msg == msg2

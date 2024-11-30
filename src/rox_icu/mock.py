@@ -105,7 +105,7 @@ class ICUMock:
         self._io_state = new_state
 
         arb_id, data_bytes = canp.encode_message(
-            canp.IOStateMessage(self._io_state), self.node_id
+            canp.IoStateMessage(0, self._io_state), self.node_id
         )
 
         message = can.Message(
@@ -151,7 +151,7 @@ class ICUMock:
 
                 msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
 
-                if isinstance(msg, canp.IOSetMessage):
+                if isinstance(msg, canp.IoStateMessage):
                     self._log.info(f"Received IOSetMessage: {msg.io_state:02x}")
                     self.io_state = msg.io_state
 

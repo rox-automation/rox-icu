@@ -152,7 +152,7 @@ class ICU:
         self.check_alive()
 
         arb_id, msg_data = canp.encode_message(
-            canp.IOSetMessage(state), node_id=self._node_id
+            canp.IoStateMessage(1, state), node_id=self._node_id
         )
 
         self._bus.send(
@@ -291,7 +291,7 @@ class ICU:
                     self._heartbeat_event.set()
                     self._log.debug(f"heartbeat: {self._last_heartbeat}")
 
-                elif isinstance(msg, canp.IOStateMessage):
+                elif isinstance(msg, canp.IoStateMessage):
                     self._uptate_io_state(msg.io_state)
 
             except asyncio.CancelledError:
