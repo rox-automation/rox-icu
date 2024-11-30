@@ -1,6 +1,12 @@
 # Changelog
 
 
+##v1.1.0
+
+* update protocol to version 12
+* add generic device parameters
+
+
 ##v1.0.0
 
 * update can protocol to version 11.
