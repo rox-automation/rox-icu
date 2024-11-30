@@ -1,7 +1,7 @@
 # Changelog
 
 
-##v1.1.0
+##v2.0.0
 
 * update protocol to version 12
 * add generic device parameters
