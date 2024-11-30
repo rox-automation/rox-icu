@@ -80,6 +80,7 @@ disable = [
     "broad-except",
     "line-too-long",
     "useless-super-delegation",
+    "raise-missing-from",
 ]
 [tool.pylint.typecheck]
 

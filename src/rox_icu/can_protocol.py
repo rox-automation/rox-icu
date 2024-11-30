@@ -196,10 +196,18 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     """Parse a message from raw data."""
     opcode = arb_id & 0x1F
     message_class = _OPCODE2MSG[opcode]
-    if message_class == ParameterMessage or message_class == SetParameterMessage:
+
+    try:
+        return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
+    except TypeError:
         param_id = data[0]  # first byte is param_id
         dtype = params_byte_defs[param_id]
         value = struct.unpack(dtype, data[1:])[0]
-        return ParameterMessage(param_id, value)
 
-    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
+        if message_class == ParameterMessage:
+            return ParameterMessage(param_id, value)
+        elif message_class == SetParameterMessage:
+            return SetParameterMessage(param_id, value)
+
+        else:
+            raise ValueError("Unknown message type")
