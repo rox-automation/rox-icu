@@ -90,12 +90,12 @@ HeartbeatMessage = namedtuple(
 )
 
 # io (op, io_state), use RTR for get
-IoStateMessage = namedtuple("IoStateMessage", "op, io_state")
+IoStateMessage = namedtuple("IoStateMessage", ("op", "io_state"))
 
 
 # device parameter message, (id, op, datatype, value), use RTR for get
 # datatype is int derived from struct format character (e.g. ord('I') for UINT32)
-ParameterMessage = namedtuple("ParameterMessage", "param_id, op, dtype, value")
+ParameterMessage = namedtuple("ParameterMessage", ("param_id", "op", "dtype", "value"))
 
 
 # ----------------------------Internal lookup tables---------------------------
