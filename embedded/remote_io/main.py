@@ -48,12 +48,14 @@ assert (
 # Initialize system
 max_enable.value = True  # enable in- and outputs
 
+IO_DIRS = 0  # 0=output, 1=input
 inputs_str = os.getenv("INPUTS")
 if inputs_str is not None:
     inputs = [int(val) for val in inputs_str.split(",")]
     print(f"Inputs: {inputs}")
     for nr in inputs:
         D_PINS[nr].switch_to_input()
+        IO_DIRS = set_bit(IO_DIRS, nr)
 else:
     print("No inputs defined")
 
@@ -144,7 +146,7 @@ async def heartbeat_loop() -> None:
     while True:
         msg = canp.HeartbeatMessage(
             device_type=12,
-            io_dir=0xFF,  # TODO: implement IO direction
+            io_dir=IO_DIRS,
             io_state=get_io_state(),
             errors=device_errors,
             counter=counter & 0xFF,
