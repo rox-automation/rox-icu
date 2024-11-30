@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 # Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
-ROX CAN Protocol Implementation
+ROX-ICU CAN Protocol Implementation
 
-This module provides a lightweight implementation of the ROX CAN protocol for efficient
-communication in embedded systems. Designed to work seamlessly in both CPython and
-MicroPython environments, it supports message encoding and decoding with a compact,
-structured protocol.
+Works both in MicroPython and CPython.
 
 Key Features:
 -------------
 - Compatible with fixed-length and variable-length message formats.
-- Dynamic support for parameter-based messages, including `ParameterMessage` and `SetParameterMessage`.
+- Dynamic support for parameter-based messages, with `ParameterMessage`.
 - Uses an 11-bit structured message ID for efficient communication:
   - Upper 6 bits: Node ID (0-63, with 0 reserved for broadcast)
   - Lower 5 bits: Command ID (0-31)
@@ -29,27 +26,6 @@ Adding Custom Messages:
 2. Register the message type in the `_MSG_DEFS` dictionary with an associated opcode and format.
 3. Define the data structure using `struct` format characters (e.g., `B=uint8`, `H=uint16`).
 
-Usage Examples:
----------------
->>> # Encode a heartbeat message
->>> msg = HeartbeatMessage(device_type=1, io_dir=0, io_state=1, errors=0, counter=42)
->>> arb_id, data = encode_message(msg, node_id=5)
-
->>> # Decode a received message
->>> decoded_msg = decode_message(arb_id, data)
-
->>> # Encode a parameter message
->>> param_msg = ParameterMessage(param_id=255, value=12345)
->>> arb_id, data = encode_message(param_msg, node_id=3)
-
->>> # Decode a parameter message
->>> decoded_param = decode_message(arb_id, data)
-
-Future Directions:
-------------------
-- Expand support for additional message types and use cases.
-- Extend the parameter framework for more device-specific configurations.
-- Transition to a fully class-based architecture for enhanced flexibility.
 
 """
 
