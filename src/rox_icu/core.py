@@ -78,7 +78,7 @@ class Pin:
 
     @state.setter
     def state(self, new_state: bool) -> None:
-        if self._is_input:
+        if self._is_input:  # TODO: read pin state from device
             raise ValueError("pin is read-only")
 
         if self._parent is None:
