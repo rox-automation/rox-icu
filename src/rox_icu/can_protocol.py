@@ -182,12 +182,10 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     opcode = arb_id & 0x1F
     message_class = _OPCODE2MSG[opcode]
 
-    try:
-        return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
-    except TypeError:
-        param_id = data[0]  # first byte is param_id
-        op = data[1]
-        dtype = data[2]
+    if message_class == ParameterMessage:
+        param_id, op, dtype = data[:3]
         value = struct.unpack(chr(dtype), data[3:])[0]
 
-    return ParameterMessage(param_id, op, dtype, value)
+        return ParameterMessage(param_id, op, dtype, value)
+
+    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
