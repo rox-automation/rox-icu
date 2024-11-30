@@ -16,7 +16,8 @@ from digitalio import Direction  # pylint: disable=import-error
 from bit_ops import set_bit, clear_bit
 
 
-VERSION = "1.4.0"
+VERSION = "1.6.0"
+CAN_PROTOCOL_VERSION = 12
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
@@ -40,7 +41,9 @@ print(f"NODE_ID: {NODE_ID}")
 print(f"Node ID: {NODE_ID}")
 print(f"Can protocol version: {canp.VERSION}")
 
-assert canp.VERSION == 11, "Can protocol version must be 10 or higher"
+assert (
+    canp.VERSION == CAN_PROTOCOL_VERSION
+), f"Can protocol version must be  {CAN_PROTOCOL_VERSION}"
 
 # Initialize system
 max_enable.value = True  # enable in- and outputs
@@ -81,7 +84,7 @@ async def read_inputs() -> None:
     prev_io_state = io_state
     prev_cycle_start = time.monotonic_ns()
 
-    opcode, byte_def = canp.get_opcode_and_bytedef(canp.IOStateMessage)
+    opcode, byte_def = canp.get_opcode_and_bytedef(canp.IoStateMessage)
     msg_id = canp.generate_message_id(NODE_ID, opcode)
     print(f"IOStateMessage ID: {msg_id:x}")
 
@@ -99,7 +102,7 @@ async def read_inputs() -> None:
         io_state = get_io_state()
 
         if io_state != prev_io_state:
-            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, io_state))
+            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, 0, io_state))
             can.send(msg)
 
         prev_io_state = io_state
@@ -167,9 +170,10 @@ async def receive_can_message() -> None:
                     decoded_msg = canp.decode_message(msg.id, msg.data)
                     print(f"Received message: {decoded_msg}")
 
-                    if isinstance(decoded_msg, canp.IOSetMessage):
-                        set_io_state(decoded_msg.io_state)
-                        print(f"IO state set to: {decoded_msg.io_state}")
+                    if isinstance(decoded_msg, canp.IoStateMessage):
+                        if decoded_msg.op == 1:
+                            set_io_state(decoded_msg.io_state)
+                            print(f"IO state set to: {decoded_msg.io_state}")
 
         await asyncio.sleep(0.001)  # Yield to other tasks
 
