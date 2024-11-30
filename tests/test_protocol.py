@@ -108,19 +108,19 @@ def test_get_param() -> None:
     param_id, _ = canp.device_parameters["test_param"]
 
     # data type
-    assert canp.params_byte_defs[param_id] == canp.UINT32
+    assert canp.params_byte_defs[param_id] == ord(canp.UINT32)
 
-    msg = canp.GetParameterMessage(param_id)
+    msg = canp.ParameterMessage(param_id, 1, ord("B"), 0xFF)
 
     # pack
     _, data_bytes = canp.encode_message(msg, 1)
-    assert data_bytes == b"\xFF"
+    assert data_bytes == b"\xFF\x01\x42\xFF"
 
 
 def test_param() -> None:
 
-    param_id, _ = canp.device_parameters["test_param"]
-    msg = canp.ParameterMessage(param_id, 1234)
+    param_id, dtype = canp.device_parameters["test_param"]
+    msg = canp.ParameterMessage(param_id, 0, dtype, 1234)
 
     assert msg.value == 1234
 
@@ -133,8 +133,8 @@ def test_param() -> None:
 
 def test_set_param() -> None:
 
-    param_id, _ = canp.device_parameters["test_param"]
-    msg = canp.SetParameterMessage(param_id, 1234)
+    param_id, dtype = canp.device_parameters["test_param"]
+    msg = canp.ParameterMessage(param_id, 1, dtype, 1234)
 
     assert msg.value == 1234
 

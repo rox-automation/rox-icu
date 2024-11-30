@@ -1,45 +1,39 @@
 #!/usr/bin/env python3
 # Copyright (c) 2024 ROX Automation - Jev Kuznetsov
+#!/usr/bin/env python3
+# Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 ROX CAN Protocol Implementation
 
-This module implements a lightweight CAN (Controller Area Network) protocol for ROX devices,
-compatible with both CPython and MicroPython environments. It provides functionality for
-message encoding and decoding, enabling efficient and uniform communication across
-embedded systems using the ROX protocol.
+This module provides a lightweight implementation of the ROX CAN protocol for efficient
+communication in embedded systems. Designed to work seamlessly in both CPython and
+MicroPython environments, it supports message encoding and decoding with a compact,
+structured protocol.
 
-Features:
----------
-- Support for both fixed-length and variable-length message types.
-- Dynamic encoding and decoding for parameter-based messages, including `ParameterMessage`
-  and `SetParameterMessage`.
-- Compact protocol design with an 11-bit structured message ID format for efficient communication.
-
-Protocol Structure:
--------------------
-Message ID (11 bits):
-    - Node ID: Upper 6 bits (0-63, with node 0 reserved for broadcast)
-    - Command ID: Lower 5 bits (0-31)
+Key Features:
+-------------
+- Compatible with fixed-length and variable-length message formats.
+- Dynamic support for parameter-based messages, including `ParameterMessage` and `SetParameterMessage`.
+- Uses an 11-bit structured message ID for efficient communication:
+  - Upper 6 bits: Node ID (0-63, with 0 reserved for broadcast)
+  - Lower 5 bits: Command ID (0-31)
 
 Message Types:
 --------------
-- `HaltMessage`: Command to halt operations with a specified IO state.
-- `HeartbeatMessage`: Periodic updates containing device type, IO state, errors, and a counter.
-- `IoStateMessage`: Reports changes in the IO state.
-- `SetIoMessage`: Requests to update the IO state.
-- `ParameterMessage`: Variable-length message for setting a parameter (param_id, value).
-- `GetParameterMessage`: Request to retrieve the value of a specific parameter.
-- `SetParameterMessage`: Variable-length message for updating a specific parameter.
+- **HaltMessage**: Halts operations with a specific IO state.
+- **HeartbeatMessage**: Provides periodic status updates, including device type, IO state, errors, and a counter.
+- **IoStateMessage**: Reports or sets IO state changes.
+- **ParameterMessage**: Handles parameter updates or retrievals using a flexible format.
 
-Adding New Messages:
---------------------
-1. Define a message structure using `namedtuple` or a custom class.
-2. Add the new message type and its `opcode` to the `_MSG_DEFS` dictionary.
-3. Specify the data layout using `struct` format characters (e.g., `B=uint8`, `H=uint16`).
+Adding Custom Messages:
+-----------------------
+1. Define the message using a `namedtuple` or a custom class.
+2. Register the message type in the `_MSG_DEFS` dictionary with an associated opcode and format.
+3. Define the data structure using `struct` format characters (e.g., `B=uint8`, `H=uint16`).
 
 Usage Examples:
 ---------------
->>> # Create and encode a fixed-length message
+>>> # Encode a heartbeat message
 >>> msg = HeartbeatMessage(device_type=1, io_dir=0, io_state=1, errors=0, counter=42)
 >>> arb_id, data = encode_message(msg, node_id=5)
 
@@ -53,11 +47,12 @@ Usage Examples:
 >>> # Decode a parameter message
 >>> decoded_param = decode_message(arb_id, data)
 
-Future Enhancements:
---------------------
-- Add support for additional generic message types.
-- Extend parameter definitions to cover more device-specific configurations.
-- Migrate to fully class-based message handling for better extensibility.
+Future Directions:
+------------------
+- Expand support for additional message types and use cases.
+- Extend the parameter framework for more device-specific configurations.
+- Transition to a fully class-based architecture for enhanced flexibility.
+
 """
 
 
@@ -98,11 +93,11 @@ class Operation:
 
 # Define parameters as a dictionary {name: (param_id, byte_def)}
 device_parameters = {
-    "io_state": (0, UINT8),
-    "device_state": (1, UINT8),
-    "error_max1": (2, UINT8),
-    "error_max2": (3, UINT8),
-    "test_param": (255, UINT32),
+    "io_state": (0, ord(UINT8)),
+    "device_state": (1, ord(UINT8)),
+    "error_max1": (2, ord(UINT8)),
+    "error_max2": (3, ord(UINT8)),
+    "test_param": (255, ord(UINT32)),
 }
 
 # Create reverse lookup by ID {param_id: byte_def}
@@ -120,17 +115,13 @@ HeartbeatMessage = namedtuple(
     ("device_type", "io_dir", "io_state", "errors", "counter"),
 )
 
-# sent on change
-IoStateMessage = namedtuple("IoStateMessage", "io_state")
+# io (op, io_state), use RTR for get
+IoStateMessage = namedtuple("IoStateMessage", "op, io_state")
 
-# requist to change io state
-SetIoMessage = namedtuple("SetIoMessage", "io_state")
 
-# device parameter message, (id, value)
-ParameterMessage = namedtuple("ParameterMessage", "param_id, value")
+# device parameter message, (id, op, datatype, value), use RTR for get
+ParameterMessage = namedtuple("ParameterMessage", "param_id, op, dtype, value")
 
-GetParameterMessage = namedtuple("GetParameterMessage", "param_id")
-SetParameterMessage = namedtuple("SetParameterMessage", "param_id, value")
 
 # ----------------------------Internal lookup tables---------------------------
 
@@ -141,11 +132,8 @@ _MSG_DEFS = {
         [
             (HaltMessage, "<B"),
             (HeartbeatMessage, "<BBBBB"),
-            (IoStateMessage, "<B"),
-            (SetIoMessage, "<B"),
+            (IoStateMessage, "<BB"),
             (ParameterMessage, None),  # variable length
-            (GetParameterMessage, "<B"),
-            (SetParameterMessage, None),  # variable length
         ]
     )
 }
@@ -183,10 +171,8 @@ def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
     opcode, byte_def = get_opcode_and_bytedef(type(message))
     arbitration_id = generate_message_id(node_id, opcode)
 
-    if isinstance(
-        message, (ParameterMessage, SetParameterMessage)
-    ):  # custom byte_def for variable length
-        byte_def = "<B" + params_byte_defs[message.param_id]
+    if isinstance(message, ParameterMessage):  # custom byte_def for variable length
+        byte_def = "<BBB" + chr(message.dtype)
 
     return arbitration_id, struct.pack(byte_def, *message)
 
@@ -201,13 +187,8 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
         return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
     except TypeError:
         param_id = data[0]  # first byte is param_id
-        dtype = params_byte_defs[param_id]
-        value = struct.unpack(dtype, data[1:])[0]
+        op = data[1]
+        dtype = data[2]
+        value = struct.unpack(chr(dtype), data[3:])[0]
 
-        if message_class == ParameterMessage:
-            return ParameterMessage(param_id, value)
-        elif message_class == SetParameterMessage:
-            return SetParameterMessage(param_id, value)
-
-        else:
-            raise ValueError("Unknown message type")
+    return ParameterMessage(param_id, op, dtype, value)
