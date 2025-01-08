@@ -1,5 +1,8 @@
 # Changelog
 
+##v2.1.0
+
+* change can config env variable to `ICU_CAN_CHANNEL` and `ICU_CAN_INTERFACE`
 
 ##v2.0.0
 
