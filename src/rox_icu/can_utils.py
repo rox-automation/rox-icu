@@ -18,18 +18,18 @@ def is_ci_environment() -> bool:
 
 def get_can_bus() -> UdpMulticastBus | SocketcanBus:
     """Get a CAN bus instance, using environment variables
-    CAN_CHANNEL and CAN_INTERFACE for configuration or a multicast bus in CI"""
+    ICU_CAN_CHANNEL and ICU_CAN_INTERFACE for configuration or a multicast bus in CI"""
 
     if is_ci_environment():
         return UdpMulticastBus("224.0.0.1", interface="udp_multicast")
 
-    channel = os.getenv("CAN_CHANNEL")
+    channel = os.getenv("ICU_CAN_CHANNEL")
     if channel is None:
         raise ValueError(
-            "Missing CAN_CHANNEL environment variable, set to can0 or similar"
+            "Missing ICU_CAN_CHANNEL environment variable, set to can0 or similar"
         )
 
-    interface = os.getenv("CAN_INTERFACE", "socketcan")
+    interface = os.getenv("ICU_CAN_INTERFACE", "socketcan")
     logging.info(f"Using CAN interface: {interface}, channel: {channel}")
     if interface == "udp_multicast":
         # note: will always receive own messages
