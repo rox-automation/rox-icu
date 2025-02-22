@@ -18,7 +18,11 @@ Message Types:
 - **HaltMessage**: Halts operations with a specific IO state.
 - **HeartbeatMessage**: Provides periodic status updates, including device type, IO state, errors, and a counter.
 - **IoStateMessage**: Reports or sets IO state changes.
-- **ParameterMessage**: Handles parameter updates or retrievals using a flexible format.
+- **ParameterMessage**: Handles parameter updates or retrievals using signed 32 bit integer.
+
+Byte format:
+-------------
+This interface uses LITTLE ENDIAN ('<') byte order for all messages.
 
 Adding Custom Messages:
 -----------------------
@@ -34,12 +38,9 @@ import struct
 from collections import namedtuple
 
 try:  # circuitpython does not have typing module
-    from typing import TYPE_CHECKING
-except ImportError:  # pragma: no cover
-    TYPE_CHECKING = False
-
-if TYPE_CHECKING:
     from typing import Type, NamedTuple, Tuple  # pragma: no cover
+except ImportError:  # pragma: no cover
+    pass
 
 
 VERSION = 12
@@ -58,26 +59,6 @@ INT32 = "i"
 FLOAT = "f"
 
 
-class Operation:
-    """Operation types for parameter messages."""
-
-    GET = 0
-    SET = 1
-
-
-# Define parameters as a dictionary {name: (param_id, byte_def)}
-device_parameters = {
-    "io_state": (0, ord(UINT8)),
-    "device_state": (1, ord(UINT8)),
-    "error_max1": (2, ord(UINT8)),
-    "error_max2": (3, ord(UINT8)),
-    "test_param": (255, ord(UINT32)),
-}
-
-# Create reverse lookup by ID {param_id: byte_def}
-params_byte_defs = {param[0]: param[1] for _, param in device_parameters.items()}
-
-
 # ----------------------------Message Definitions----------------------------
 # opcode 0
 HaltMessage = namedtuple("HaltMessage", "io_state")  # halt with desired io state.
@@ -89,13 +70,12 @@ HeartbeatMessage = namedtuple(
     ("device_type", "io_dir", "io_state", "errors", "counter"),
 )
 
-# io (op, io_state), use RTR for get
-IoStateMessage = namedtuple("IoStateMessage", ("op", "io_state"))
 
+IoStateMessage = namedtuple("IoStateMessage", "io_state")
+SetIoStateMessage = namedtuple("SetIoStateMessage", "io_state")
 
-# device parameter message, (id, op, datatype, value), use RTR for get
-# datatype is int derived from struct format character (e.g. ord('I') for UINT32)
-ParameterMessage = namedtuple("ParameterMessage", ("param_id", "op", "dtype", "value"))
+SetParameterMessage = namedtuple("SetParameterMessage", ("param_id", "value"))
+GetParameterMessage = namedtuple("GetParameterMessage", ("param_id"))
 
 
 # ----------------------------Internal lookup tables---------------------------
@@ -107,8 +87,10 @@ _MSG_DEFS = {
         [
             (HaltMessage, "<B"),
             (HeartbeatMessage, "<BBBBB"),
-            (IoStateMessage, "<BB"),
-            (ParameterMessage, None),  # variable length
+            (IoStateMessage, "<B"),
+            (SetIoStateMessage, "<B"),
+            (SetParameterMessage, "<Bi"),
+            (GetParameterMessage, "<B"),
         ]
     )
 }
@@ -146,9 +128,6 @@ def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
     opcode, byte_def = get_opcode_and_bytedef(type(message))
     arbitration_id = generate_message_id(node_id, opcode)
 
-    if isinstance(message, ParameterMessage):  # custom byte_def for variable length
-        byte_def = "<BBB" + chr(message.dtype)
-
     return arbitration_id, struct.pack(byte_def, *message)
 
 
@@ -157,11 +136,5 @@ def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     """Parse a message from raw data."""
     opcode = arb_id & 0x1F
     message_class = _OPCODE2MSG[opcode]
-
-    if message_class == ParameterMessage:
-        param_id, op, dtype = data[:3]
-        value = struct.unpack(chr(dtype), data[3:])[0]
-
-        return ParameterMessage(param_id, op, dtype, value)
 
     return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore

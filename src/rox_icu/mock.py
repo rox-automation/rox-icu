@@ -105,7 +105,7 @@ class ICUMock:
         self._io_state = new_state
 
         arb_id, data_bytes = canp.encode_message(
-            canp.IoStateMessage(0, self._io_state), self.node_id
+            canp.IoStateMessage(self._io_state), self.node_id
         )
 
         message = can.Message(

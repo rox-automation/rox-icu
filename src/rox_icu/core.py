@@ -152,7 +152,7 @@ class ICU:
         self.check_alive()
 
         arb_id, msg_data = canp.encode_message(
-            canp.IoStateMessage(1, state), node_id=self._node_id
+            canp.IoStateMessage(state), node_id=self._node_id
         )
 
         self._bus.send(
