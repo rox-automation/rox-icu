@@ -259,6 +259,11 @@ class ICUMock:
 
     async def main(self):
         """Main async loop for the ICU mock."""
+
+        self._log.info(
+            f"Starting ICU mock id={self.node_id} on {self._bus.channel_info}"
+        )
+
         async with asyncio.TaskGroup() as tg:
             tg.create_task(self.heartbeat_loop())
             tg.create_task(self.message_handler())
