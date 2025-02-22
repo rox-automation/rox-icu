@@ -81,7 +81,7 @@ GetParameterMessage = namedtuple("GetParameterMessage", ("param_id"))
 # ----------------------------Internal lookup tables---------------------------
 
 # message: (opcode, byte_def)
-_MSG_DEFS = {
+MSG_DEFS = {
     message_type: (opcode, byte_def)
     for opcode, (message_type, byte_def) in enumerate(
         [
@@ -94,7 +94,7 @@ _MSG_DEFS = {
         ]
     )
 }
-_OPCODE2MSG = {v[0]: k for k, v in _MSG_DEFS.items()}
+OPCODE2MSG = {v[0]: k for k, v in MSG_DEFS.items()}
 
 
 # ----------------------------Utility Functions----------------------------
@@ -118,7 +118,7 @@ def get_node_id(message_id: int) -> int:
 def get_opcode_and_bytedef(message_class: "Type[NamedTuple]") -> "Tuple[int, str]":
     """Get the opcode for a message type."""
 
-    return _MSG_DEFS[message_class]  # type: ignore
+    return MSG_DEFS[message_class]  # type: ignore
 
 
 def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
@@ -135,6 +135,6 @@ def encode_message(message: "NamedTuple", node_id: int) -> "Tuple[int, bytes]":
 def decode_message(arb_id: int, data: "bytes | bytearray") -> "NamedTuple":
     """Parse a message from raw data."""
     opcode = arb_id & 0x1F
-    message_class = _OPCODE2MSG[opcode]
+    message_class = OPCODE2MSG[opcode]
 
-    return message_class(*struct.unpack(_MSG_DEFS[message_class][1], data))  # type: ignore
+    return message_class(*struct.unpack(MSG_DEFS[message_class][1], data))  # type: ignore
