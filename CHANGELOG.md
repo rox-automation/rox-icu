@@ -2,6 +2,9 @@
 
 ## unreleased
 
+
+## v2.2.0
+
 * bump protocol to version 23
 * refactor protocol messages, to make it simpler, remove parameters.
 * refactor `get_can_bus` function to accept named parameter
