@@ -4,13 +4,15 @@ rox_icu CLI
 """
 
 
+from pathlib import Path
+
 import can
 import click
 
 import rox_icu.can_protocol as canp
 from rox_icu import __version__
-from rox_icu.utils import run_main
 from rox_icu.can_utils import get_can_bus
+from rox_icu.utils import run_main
 
 
 @click.group()
@@ -65,12 +67,20 @@ def monitor():
 def inspect(node_id: int, channel: str) -> None:
     """Inspect ICU messages on CAN bus for a specific node"""
     from candbg import inspector
+
     from rox_icu.can_utils import create_dbc
 
-    dbc = create_dbc(node_id, filename=f"ICU_{node_id}.dbc")
+    # note: tried to pass dbc object directly but for some reason that
+    # does not work. Spent 1.5 hours trying to figure out why, but no luck.
+    # So, for now, just create a temporary DBC file and use that.
+    tmp_file = "/tmp/icu.dbc"
+
+    create_dbc(node_id, filename=tmp_file)
+    dbc_pth = Path(tmp_file)
+    assert dbc_pth.exists(), f"Failed to create DBC file: {dbc_pth}"
 
     try:
-        inspector.main(dbc, channel=channel)
+        inspector.main(dbc_pth, channel=channel)
     except KeyboardInterrupt:
         pass
 
