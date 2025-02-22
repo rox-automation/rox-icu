@@ -60,11 +60,19 @@ def monitor():
 
 
 @cli.command()
-def inspect():
-    """Inspect ICU messages on CAN bus (ignoring heartbeat)"""
-    from .inspector import main
+@click.argument("node_id", type=int)
+@click.option("--channel", "-c", default="can0")
+def inspect(node_id: int, channel: str) -> None:
+    """Inspect ICU messages on CAN bus for a specific node"""
+    from candbg import inspector
+    from rox_icu.can_utils import create_dbc
 
-    run_main(main)
+    dbc = create_dbc(node_id, filename=f"ICU_{node_id}.dbc")
+
+    try:
+        inspector.main(dbc, channel=channel)
+    except KeyboardInterrupt:
+        pass
 
 
 @cli.command()

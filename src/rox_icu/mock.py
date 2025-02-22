@@ -39,18 +39,18 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
 
 import asyncio
-import orjson
 import logging
 
 import aiomqtt
 import can
+import orjson
 from can.interfaces.socketcan import SocketcanBus
 from can.interfaces.udp_multicast import UdpMulticastBus
 
 import rox_icu.can_protocol as canp
+from rox_icu.bit_ops import clear_bit, set_bit
 from rox_icu.can_utils import get_can_bus
 from rox_icu.utils import run_main
-from rox_icu.bit_ops import set_bit, clear_bit
 
 # Constants for CAN messages
 NODE_ID = 0x01
@@ -263,6 +263,7 @@ class ICUMock:
         self._log.info(
             f"Starting ICU mock id={self.node_id} on {self._bus.channel_info}"
         )
+        self._log.info(f"Protocol version: {canp.VERSION}")
 
         async with asyncio.TaskGroup() as tg:
             tg.create_task(self.heartbeat_loop())

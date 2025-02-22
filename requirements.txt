@@ -1,4 +1,5 @@
 aiomqtt
+candbg
 click
 coloredlogs
 orjson
