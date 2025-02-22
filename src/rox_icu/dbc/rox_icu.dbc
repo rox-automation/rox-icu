@@ -1,0 +1,60 @@
+VERSION "23"
+
+
+NS_ :
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_:
+
+
+BO_ 320 ICU_HaltMessage: 1 Vector__XXX
+ SG_ io_state : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 321 ICU_HeartbeatMessage: 5 Vector__XXX
+ SG_ counter : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ errors : 24|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ io_state : 16|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ io_dir : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ device_type : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 322 ICU_IoStateMessage: 1 Vector__XXX
+ SG_ io_state : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 323 ICU_SetIoStateMessage: 1 Vector__XXX
+ SG_ io_state : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 324 ICU_SetParameterMessage: 5 Vector__XXX
+ SG_ value : 8|32@1- (1,0) [0|0] "" Vector__XXX
+ SG_ param_id : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 325 ICU_GetParameterMessage: 1 Vector__XXX
+ SG_ param_id : 0|8@1+ (1,0) [0|0] "" Vector__XXX

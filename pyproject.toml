@@ -30,6 +30,8 @@ requires-python = ">=3.11"
 dependencies = {file = ["requirements.txt"]}
 optional-dependencies = {dev = { file = [".devcontainer/requirements-dev.txt"] }}
 
+[tool.setuptools.package-data]
+rox_icu = ["dbc/*.dbc"]
 
 
 [project.urls]

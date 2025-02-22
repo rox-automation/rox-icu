@@ -99,3 +99,11 @@ def release(ctx):
     ctx.run(
         f"docker run --rm -e PYPI_TOKEN={token} -v {CWD}:/workspace roxauto/python-ci /scripts/publish.sh"
     )
+
+
+@task
+def create_dbc(ctx):
+    """create dbc in package folder"""
+    import rox_icu.can_utils as utils
+
+    utils.create_dbc(node_id=10, filename="src/rox_icu/dbc/rox_icu.dbc")
