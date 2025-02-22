@@ -4,7 +4,7 @@ import pytest
 
 from rox_icu import can_protocol as canp
 
-EXPECTED_PROTOCOL_VERSION = 12
+EXPECTED_PROTOCOL_VERSION = 23
 
 
 def test_version() -> None:
