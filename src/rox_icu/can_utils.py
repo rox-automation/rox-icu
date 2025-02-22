@@ -93,7 +93,6 @@ def create_dbc(node_id: int, filename: str | None = None) -> Database:
     db = Database(version=str(canp.VERSION))
 
     for msg in canp.MSG_DEFS.keys():
-        print(f"Adding ICU message: {msg}")
         opcode, byte_def = canp.get_opcode_and_bytedef(msg)
         msg_id = canp.generate_message_id(node_id, opcode)
         signals = create_signals_from_namedtuple(msg, byte_def)

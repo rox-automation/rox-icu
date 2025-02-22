@@ -5,6 +5,10 @@
 * bump protocol to version 23
 * refactor protocol messages, to make it simpler, remove parameters.
 * refactor `get_can_bus` function to accept named parameter
+* add dbc file generation
+    - `invoke create-dbc` tool
+    - `rox_icu.dbc.get_dbc()` - path to file
+    - `rox_icu.can_utils.create_dbc(node_id=10)` - build dbc, return database
 
 
 ## v2.1.0
