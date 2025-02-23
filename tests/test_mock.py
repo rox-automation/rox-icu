@@ -9,13 +9,18 @@ from rox_icu.mock import ICUMock
 NODE_ID = 10
 
 
+def test_io_state():
+    mock = ICUMock(NODE_ID)
+    assert mock.io_state == 0
+
+
 @pytest.mark.skipif(os.getenv("CI") is not None, reason="Skipped in CI environment")
 @pytest.mark.asyncio
 async def test_mqtt_commands():
 
     mock = ICUMock(NODE_ID, simulate_inputs=False, mqtt_broker="localhost")
 
-    asyncio.create_task(mock.main())
+    tsk = asyncio.create_task(mock.main())
 
     assert mock.io_state == 0
 
@@ -33,3 +38,11 @@ async def test_mqtt_commands():
         await mqtt.publish(cmd_topic, json.dumps(msg))
         await asyncio.sleep(0.1)
         assert mock.io_state == 0x03
+        await asyncio.sleep(0.1)
+
+    # stop the mock
+    try:
+        tsk.cancel()
+        await tsk
+    except asyncio.CancelledError:
+        pass
