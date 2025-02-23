@@ -5,14 +5,14 @@ rox_icu CLI
 
 
 from pathlib import Path
-
+import os
 import can
 import click
 
 import rox_icu.can_protocol as canp
 from rox_icu import __version__
 from rox_icu.can_utils import get_can_bus
-from rox_icu.utils import run_main
+from rox_icu.utils import run_main_async
 
 
 @click.group()
@@ -29,26 +29,17 @@ def info() -> None:
 
 @cli.command()
 @click.option("--node-id", default=1, help="device ID")
-@click.option("--sim-inputs", is_flag=True, help="simulate inputs")
-@click.option("--mqtt-broker", help="MQTT broker address", default=None)
-@click.option("--can-bus", help="CAN bus name", default="env")
+@click.option("--channel", "-c", help="CAN bus name", default="vcan0")
 def mock(
     node_id: int,
-    sim_inputs: bool,
-    mqtt_broker: str | None,
-    can_bus: str,
+    channel: str,
 ):
-    """Mock ICU device on CAN bus"""
-    from .mock import ICUMock
+    # set env variable for can bus
+    os.environ["CAN_CHANNEL"] = channel
 
-    def main() -> None:
-        bus = get_can_bus(can_bus)
-        dev = ICUMock(
-            node_id, simulate_inputs=sim_inputs, mqtt_broker=mqtt_broker, can_bus=bus
-        )
-        dev.start()
+    import rox_icu.mock as mock
 
-    run_main(main)
+    run_main_async(mock.main(node_id))
 
 
 @cli.command()
