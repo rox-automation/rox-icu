@@ -25,7 +25,4 @@
     }
   },
   "python.defaultInterpreterPath": "/usr/local/bin/python",
-  "python.analysis.extraPaths": [
-    "${workspaceFolder}/embedded/lib"
-  ],
 }
