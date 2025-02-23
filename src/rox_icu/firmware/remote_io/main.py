@@ -16,19 +16,17 @@ use `settings.toml` on the device like this:
     INPUTS="0,7"
 
 """
-import os
 import asyncio
+import gc
+import os
 import struct
 import time
-import gc
+
 import can_protocol as canp
-from bit_ops import set_bit, clear_bit
-
-# board specific imports
 import canio
-from icu_board import D_PINS, can, led1, led2, max_enable
+from bit_ops import clear_bit, set_bit
 from digitalio import Direction
-
+from icu_board import D_PINS, can, led1, led2, max_enable
 
 VERSION = "2.2.0"
 CAN_PROTOCOL_VERSION = 23
