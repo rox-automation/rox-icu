@@ -1,11 +1,7 @@
 """ Mock for the CANIO firmware module. """
 
-# canio.py mock for CPython
-try:
-    import can as pycan  # python-can package
-except ImportError:
-    pycan = None  # type: ignore
-    print("python-can is not installed; CAN operations will be simulated.")
+import can as pycan  # python-can package
+from rox_icu.can_utils import get_can_bus
 
 
 # A minimal Message class that mimics CircuitPython's canio.Message.
@@ -36,9 +32,8 @@ class CAN:
         if pycan:
             try:
                 # Adjust bustype and channel based on your system.
-                self._bus = pycan.interface.Bus(
-                    bustype="socketcan", channel="can0", bitrate=baudrate
-                )
+                self._bus = get_can_bus()
+                print(f"Initialized python-can bus: {self._bus}")
                 self.state = (
                     BusState.ERROR_ACTIVE
                 )  # or set to a 'normal' state if you prefer
@@ -47,6 +42,7 @@ class CAN:
                 self._bus = None
         else:
             self._bus = None
+            print("python-can package not found; using mock CAN bus")
 
     def send(self, msg):
         if self._bus:
