@@ -16,8 +16,8 @@ from digitalio import Direction  # pylint: disable=import-error
 from bit_ops import set_bit, clear_bit
 
 
-VERSION = "1.6.0"
-CAN_PROTOCOL_VERSION = 12
+VERSION = "2.2.0"
+CAN_PROTOCOL_VERSION = 23
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
@@ -104,7 +104,7 @@ async def read_inputs() -> None:
         io_state = get_io_state()
 
         if io_state != prev_io_state:
-            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, 0, io_state))
+            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, io_state))
             can.send(msg)
 
         prev_io_state = io_state
@@ -172,10 +172,9 @@ async def receive_can_message() -> None:
                     decoded_msg = canp.decode_message(msg.id, msg.data)
                     print(f"Received message: {decoded_msg}")
 
-                    if isinstance(decoded_msg, canp.IoStateMessage):
-                        if decoded_msg.op == 1:
-                            set_io_state(decoded_msg.io_state)
-                            print(f"IO state set to: {decoded_msg.io_state}")
+                    if isinstance(decoded_msg, canp.SetIoStateMessage):
+                        set_io_state(decoded_msg.io_state)
+                        print(f"IO state set to: {decoded_msg.io_state}")
 
         await asyncio.sleep(0.001)  # Yield to other tasks
 
