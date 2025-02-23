@@ -1,31 +1,31 @@
 {
-    "files.autoSave": "onFocusChange",
+  "files.autoSave": "onFocusChange",
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "on",
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#f6d265",
+    "titleBar.inactiveBackground": "#f6d265",
+    "titleBar.activeForeground": "#000000",
+    "titleBar.inactiveForeground": "#000000"
+  },
+  "remote.autoForwardPorts": false,
+  "[python]": {
     "editor.formatOnSave": true,
-    "editor.wordWrap": "on",
-
-    "workbench.colorCustomizations": {
-      "titleBar.activeBackground": "#f6d265",
-      "titleBar.inactiveBackground": "#f6d265",
-      "titleBar.activeForeground": "#000000",
-      "titleBar.inactiveForeground": "#000000"
-    },
-
-    "remote.autoForwardPorts": false,
-
-    "[python]": {
-      "editor.formatOnSave": true,
-      "editor.defaultFormatter": "ms-python.black-formatter",
-      // "editor.defaultFormatter": "charliermarsh.ruff",
-      // "editor.defaultFoldingRangeProvider": "charliermarsh.ruff"
-    },
-    "yaml.customTags": [
-      "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
-    ],
-    "fileHeaderComment.parameter": {
-      "*": {
-        "company": "ROX Automation",
-        "pybang": "#!/usr/bin/env python3"
-      }
-    },
-    "python.defaultInterpreterPath": "/usr/local/bin/python",
-  }
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    // "editor.defaultFormatter": "charliermarsh.ruff",
+    // "editor.defaultFoldingRangeProvider": "charliermarsh.ruff"
+  },
+  "yaml.customTags": [
+    "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
+  ],
+  "fileHeaderComment.parameter": {
+    "*": {
+      "company": "ROX Automation",
+      "pybang": "#!/usr/bin/env python3"
+    }
+  },
+  "python.defaultInterpreterPath": "/usr/local/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/embedded/lib"
+  ],
+}
