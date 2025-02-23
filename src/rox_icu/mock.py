@@ -13,11 +13,11 @@ import rox_icu.firmware.remote_io.main as remote_io  # noqa: E402
 NODE_ID = 10
 
 
-def main(node_id: int = NODE_ID):
+async def main(node_id: int = NODE_ID):
 
     remote_io.NODE_ID = node_id
-    run_main_async(remote_io.main())
+    await remote_io.main()
 
 
 if __name__ == "__main__":
-    main()
+    run_main_async(main())
