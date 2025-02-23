@@ -6,11 +6,32 @@ import pytest
 
 from rox_icu.mock import ICUMock
 
-NODE_ID = 10
+NODE_ID = 42
+
+
+def test_pin_state():
+
+    mock = ICUMock(NODE_ID)
+
+    assert mock.io_state == 0
+
+    for idx in range(8):
+        assert mock.get_pin(idx) == 0
+
+    mock.set_pin(0, True)
+    assert mock.get_pin(0)
+
+    mock.set_pin(0, False)
 
 
 def test_io_state():
     mock = ICUMock(NODE_ID)
+    assert mock.io_state == 0
+
+    mock.io_state = 0x01
+    assert mock.io_state == 0x01
+
+    mock.io_state = 0
     assert mock.io_state == 0
 
 
