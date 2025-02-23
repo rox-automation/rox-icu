@@ -55,6 +55,14 @@ The ROX ICU is designed for decentralized control in mobile machinery and as a P
 * use `invoke` (`tasks.py`) in that folder to manage device.
 
 
+### Remote IO firmware
+
+Main function of this package is to provide RemoteIO functionality on the embedded device and a driver interface on the PC.
+
+the firmware is located in `src/rox_icu/firmware`.
+The fun part about it is that it can be run as a mock on CPython with `icu mock`. This is very handy for testing and developing systems without actual hardware.
+
+
 
 ### PC code
 
