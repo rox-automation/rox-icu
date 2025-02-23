@@ -76,6 +76,7 @@ class ICUMock:
         self._log = logging.getLogger(f"icu.mock.{node_id}")
 
         firmware.NODE_ID = node_id
+        self.D_PINS = firmware.D_PINS
 
         self.error_max1 = 0
         self.error_max2 = 0
@@ -102,7 +103,9 @@ class ICUMock:
     def io_state(self, new_state: int) -> None:
         """Set the IO state."""
         self._log.info(f"Setting IO state: {new_state:02x}")
-        firmware.set_io_state(new_state)
+
+        for bit, pin in enumerate(self.D_PINS):
+            pin.value = bool((new_state >> bit) & 0x01)
 
         # Update the state queue
         if self._mqtt_broker is not None:
@@ -111,7 +114,11 @@ class ICUMock:
     def set_pin(self, pin: int, state: bool) -> None:
         """Set the state of a pin."""
         self._log.info(f"Setting pin {pin} to {state}")
-        firmware.D_PINS[pin].value = state
+        self.D_PINS[pin].value = state
+
+    def get_pin(self, pin: int) -> bool:
+        """Get the state of a pin."""
+        return self.D_PINS[pin].value
 
     def get_global_error(self) -> tuple[int, int]:
         """Return the error status of max1 and max2."""
