@@ -22,6 +22,7 @@ def test_pin_state():
 
     mock = ICUMock(NODE_ID)
 
+    mock.io_state = 0
     assert mock.io_state == 0
 
     for idx in range(8):
