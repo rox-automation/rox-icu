@@ -2,7 +2,19 @@
 """
 Remote IO firmware for ICU board
 
-Copyright (c) 2024 ROX Automation - Jev Kuznetsov
+Copyright (c) 2024-2025 ROX Automation - Jev Kuznetsov
+
+
+
+Board configuration:
+---------------------
+
+use `settings.toml` on the device like this:
+
+    DEBUG=1
+    NODE_ID=10
+    INPUTS="0,7"
+
 """
 import os
 import asyncio
@@ -10,10 +22,12 @@ import struct
 import time
 import gc
 import can_protocol as canp
-import canio  # pylint: disable=import-error
-from icu_board import D_PINS, can, led1, led2, max_enable
-from digitalio import Direction  # pylint: disable=import-error
 from bit_ops import set_bit, clear_bit
+
+# board specific imports
+import canio
+from icu_board import D_PINS, can, led1, led2, max_enable
+from digitalio import Direction
 
 
 VERSION = "2.2.0"
@@ -210,4 +224,5 @@ async def main() -> None:
     )
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
