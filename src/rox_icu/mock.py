@@ -151,6 +151,17 @@ class ICUMock:
             await client.publish(state_topic, state)
             self._state_queue.task_done()
 
+    async def send_heartbeat(self, client: aiomqtt.Client):
+        """Send a heartbeat message to the MQTT broker."""
+        heartbeat_topic = f"{self.MQTT_BASE_TOPIC}/{self.node_id}/heartbeat"
+
+        self._log.info(f"Publishing heartbeat to MQTT topic: {heartbeat_topic}")
+        counter = 0
+        while True:
+            await client.publish(heartbeat_topic, f"Heartbeat {counter}")
+            await asyncio.sleep(0.1)
+            counter += 1
+
     async def receive_mqtt_commands(self, client: aiomqtt.Client):
         """Receive and process MQTT commands."""
         self._log.info("Receiving MQTT commands")
@@ -196,6 +207,7 @@ class ICUMock:
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(self.send_mqtt_state(client))
                 tg.create_task(self.receive_mqtt_commands(client))
+                tg.create_task(self.send_heartbeat(client))
 
     async def main(self):
         """Main async loop for the ICU mock."""
@@ -205,9 +217,9 @@ class ICUMock:
         )
 
         async with asyncio.TaskGroup() as tg:
+            tg.create_task(self.mqtt_loop())
             tg.create_task(firmware.main())
             tg.create_task(self.toggle_outputs())
-            tg.create_task(self.mqtt_loop())
 
     def start(self):
         """Start the main loop."""
@@ -217,9 +229,11 @@ class ICUMock:
         firmware.can.bus.shutdown()
 
 
-def main(node_id: int = NODE_ID):
+def main(node_id: int = NODE_ID, simulate_inputs: bool = False):
     try:
-        mock = ICUMock(node_id, simulate_inputs=True)
+        mock = ICUMock(
+            node_id, simulate_inputs=simulate_inputs, mqtt_broker="localhost"
+        )
         mock.start()
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt - shutting down ICU mock")

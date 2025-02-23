@@ -1,8 +1,11 @@
 """ Mock for the CANIO firmware module. """
 
 import time
+import logging
 import can as pycan  # python-can package
 from rox_icu.can_utils import get_can_bus
+
+log = logging.getLogger("canio")
 
 
 # A minimal Message class that mimics CircuitPython's canio.Message.
@@ -32,21 +35,18 @@ class CAN:
 
         # Adjust bustype and channel based on your system.
         self.bus = get_can_bus()
-        print(f"Initialized python-can bus: {self.bus}")
+        if self.bus is None:
+            log.error("Failed to initialize CAN bus!")
+            raise RuntimeError("get_can_bus() returned None")
+        log.info(f"Initialized python-can bus: {self.bus}")
         self.state = BusState.ERROR_ACTIVE  # or set to a 'normal' state if you prefer
 
     def send(self, msg):
-        if self.bus:
-            can_msg = pycan.Message(
-                arbitration_id=msg.id, data=msg.data, is_extended_id=False
-            )
-            try:
-                self.bus.send(can_msg)
-            except Exception as e:
-                print("Error sending message:", e)
-        else:
-            # When no bus is available, simulate the send.
-            print(f"Mock send: id={msg.id}, data={msg.data}")
+
+        can_msg = pycan.Message(
+            arbitration_id=msg.id, data=msg.data, is_extended_id=False
+        )
+        self.bus.send(can_msg)
 
     def listen(self, timeout=0):
         # Return a dummy listener wrapping python-can's receive functionality.

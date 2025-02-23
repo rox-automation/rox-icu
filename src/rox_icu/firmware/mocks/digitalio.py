@@ -3,8 +3,8 @@ from enum import Enum
 
 
 class Direction(Enum):
-    INPUT = "INPUT"
-    OUTPUT = "OUTPUT"
+    INPUT = 1
+    OUTPUT = 0
 
 
 class DigitalInOut:
