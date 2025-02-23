@@ -16,6 +16,7 @@ use `settings.toml` on the device like this:
     INPUTS="0,7"
 
 """
+import sys
 import asyncio
 import gc
 import os
@@ -30,6 +31,9 @@ from icu_board import D_PINS, can, led1, led2, max_enable
 
 VERSION = "2.2.0"
 CAN_PROTOCOL_VERSION = 23
+
+# delay a bit on PC
+SAMPLE_DELAY = 0.001 if sys.implementation.name == "cpython" else 0
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
@@ -124,15 +128,14 @@ async def read_inputs() -> None:
         # Free memory
         # gc.collect()
 
-        # D_PINS[0].value = False
-
-        await asyncio.sleep(0)
+        await asyncio.sleep(SAMPLE_DELAY)
 
         max_cycle_time = max(max_cycle_time, cycle_time)
         total_cycle_time += cycle_time
         loop_count += 1
 
         if loop_count % 1000 == 0:
+            print(f"{loop_count=}")
             avg_cycle_time = total_cycle_time / 1000
             uptime_h = time.monotonic() / 3600
             print(
