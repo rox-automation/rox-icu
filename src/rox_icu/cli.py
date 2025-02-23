@@ -54,7 +54,7 @@ def monitor():
 
 @cli.command()
 @click.argument("node_id", type=int)
-@click.option("--channel", "-c", default="can0")
+@click.option("--channel", "-c", default="vcan0")
 def inspect(node_id: int, channel: str) -> None:
     """Inspect ICU messages on CAN bus for a specific node"""
     from candbg import inspector
