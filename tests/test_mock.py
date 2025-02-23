@@ -4,9 +4,18 @@ import os
 import aiomqtt
 import pytest
 
-from rox_icu.mock import ICUMock
+
+from rox_icu.mock import ICUMock, firmware
 
 NODE_ID = 42
+
+
+def test_pin_direction() -> None:
+    """all should be output"""
+    mock = ICUMock(NODE_ID)
+
+    for pin in mock.D_PINS:
+        assert pin.direction == firmware.Direction.OUTPUT
 
 
 def test_pin_state():

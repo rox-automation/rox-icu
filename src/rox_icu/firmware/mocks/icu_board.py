@@ -4,10 +4,10 @@ This module provides mock classes and functionality to simulate the CircuitPytho
 hardware interfaces used in the original icu_board.py.
 """
 
-from enum import Enum
 from typing import List
 
 from . import canio
+from .digitalio import Direction
 
 
 # Mock base classes to simulate CircuitPython hardware interfaces
@@ -22,17 +22,12 @@ class Pin:
         return f"Pin({self.pin_id})"
 
 
-class Direction(Enum):
-    INPUT = "INPUT"
-    OUTPUT = "OUTPUT"
-
-
 class DigitalInOut:
     """Mock digital I/O pin"""
 
     def __init__(self, pin: Pin):
         self.pin = pin
-        self.direction = Direction.INPUT
+        self.direction = Direction.OUTPUT
         self._value = False
 
     def switch_to_output(self, value: bool = False) -> None:

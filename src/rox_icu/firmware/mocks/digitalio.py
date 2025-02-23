@@ -1,7 +1,10 @@
 # mocks/digitalio.py
-class Direction:
-    INPUT = "input"
-    OUTPUT = "output"
+from enum import Enum
+
+
+class Direction(Enum):
+    INPUT = "INPUT"
+    OUTPUT = "OUTPUT"
 
 
 class DigitalInOut:

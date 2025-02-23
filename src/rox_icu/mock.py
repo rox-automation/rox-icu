@@ -104,8 +104,10 @@ class ICUMock:
         """Set the IO state."""
         self._log.info(f"Setting IO state: {new_state:02x}")
 
-        for bit, pin in enumerate(self.D_PINS):
-            pin.value = bool((new_state >> bit) & 0x01)
+        # for bit, pin in enumerate(self.D_PINS):
+        #     pin.value = bool((new_state >> bit) & 0x01)
+
+        firmware.set_io_state(new_state)
 
         # Update the state queue
         if self._mqtt_broker is not None:
@@ -135,9 +137,8 @@ class ICUMock:
 
             # toggle bit 7
             self.io_state ^= 0x80
-            self._log.info(f"{self.io_state=}")
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
 
     async def send_mqtt_state(self, client: aiomqtt.Client):
         """Send the current I/O state to the MQTT broker."""

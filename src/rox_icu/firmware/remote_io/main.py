@@ -22,7 +22,7 @@ import gc
 import os
 import struct
 import time
-
+from micropython import const
 import can_protocol as canp
 import canio
 from bit_ops import clear_bit, set_bit
@@ -32,8 +32,14 @@ from icu_board import D_PINS, can, led1, led2, max_enable
 VERSION = "2.2.0"
 CAN_PROTOCOL_VERSION = 23
 
-# delay a bit on PC
-SAMPLE_DELAY = 0.001 if sys.implementation.name == "cpython" else 0
+#  PC params
+if sys.implementation.name == "cpython":
+    SAMPLE_DELAY = 0.001
+    DISPLAY_INFO = False
+else:
+    SAMPLE_DELAY = const(0)
+    DISPLAY_INFO = const(False)
+
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
@@ -134,7 +140,7 @@ async def read_inputs() -> None:
         total_cycle_time += cycle_time
         loop_count += 1
 
-        if loop_count % 1000 == 0:
+        if loop_count % 1000 == 0 and DISPLAY_INFO:
             print(f"{loop_count=}")
             avg_cycle_time = total_cycle_time / 1000
             uptime_h = time.monotonic() / 3600
@@ -180,6 +186,8 @@ async def receive_can_message() -> None:
     while True:
         if listener.in_waiting():
             msg = listener.receive()
+            if msg is not None:
+                print(f"Received message: {msg}")
             if msg and canp.get_node_id(msg.id) == NODE_ID:
                 if isinstance(msg, canio.RemoteTransmissionRequest):
                     print(f"RTR message {msg.id:x}")

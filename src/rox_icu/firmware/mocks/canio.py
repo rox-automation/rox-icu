@@ -1,5 +1,6 @@
 """ Mock for the CANIO firmware module. """
 
+import time
 import can as pycan  # python-can package
 from rox_icu.can_utils import get_can_bus
 
@@ -29,20 +30,10 @@ class CAN:
         self.auto_restart = auto_restart
         self.state = BusState.ERROR_ACTIVE  # you can adjust this based on bus status
 
-        if pycan:
-            try:
-                # Adjust bustype and channel based on your system.
-                self.bus = get_can_bus()
-                print(f"Initialized python-can bus: {self.bus}")
-                self.state = (
-                    BusState.ERROR_ACTIVE
-                )  # or set to a 'normal' state if you prefer
-            except Exception as e:
-                print("Error initializing python-can bus:", e)
-                self.bus = None
-        else:
-            self.bus = None
-            print("python-can package not found; using mock CAN bus")
+        # Adjust bustype and channel based on your system.
+        self.bus = get_can_bus()
+        print(f"Initialized python-can bus: {self.bus}")
+        self.state = BusState.ERROR_ACTIVE  # or set to a 'normal' state if you prefer
 
     def send(self, msg):
         if self.bus:
@@ -69,12 +60,37 @@ class DummyListener:
         self._timeout = timeout
 
     def in_waiting(self):
-        # For simplicity, always return False; you could integrate a queue for real messages.
-        return False
+        # For simplicity, always return True; you could integrate a queue for real messages.
+        return True
 
     def receive(self):
-        if self._bus:
-            can_msg = self._bus.recv(timeout=self._timeout)
-            if can_msg:
-                return Message(id=can_msg.arbitration_id, data=can_msg.data)
+
+        can_msg = self._bus.recv(timeout=self._timeout)
+        if can_msg:
+            return Message(id=can_msg.arbitration_id, data=can_msg.data)
+
         return None
+
+
+# --------testing code----------------
+
+
+def monitor_can() -> None:
+    can = CAN()
+    listener = can.listen(timeout=0)
+    while True:
+        if listener.in_waiting():
+            msg = listener.receive()
+            if msg:
+                if isinstance(msg, RemoteTransmissionRequest):
+                    print(f"RTR message {msg.id:x}")
+                else:
+                    print(f"Received message: {msg.id:x} {msg.data.hex()}")
+        else:
+            print("No message received")
+            break
+        time.sleep(0.001)
+
+
+if __name__ == "__main__":
+    monitor_can()
