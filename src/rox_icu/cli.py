@@ -12,7 +12,7 @@ import click
 import rox_icu.can_protocol as canp
 from rox_icu import __version__
 from rox_icu.can_utils import get_can_bus
-from rox_icu.utils import run_main_async
+from rox_icu.utils import run_main
 
 
 @click.group()
@@ -39,7 +39,7 @@ def mock(
 
     import rox_icu.mock as mock
 
-    run_main_async(mock.main(node_id))
+    run_main(lambda: mock.main(node_id))
 
 
 @cli.command()
