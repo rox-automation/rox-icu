@@ -32,26 +32,25 @@ class CAN:
         if pycan:
             try:
                 # Adjust bustype and channel based on your system.
-                self._bus = get_can_bus()
-                print(f"Initialized python-can bus: {self._bus}")
+                self.bus = get_can_bus()
+                print(f"Initialized python-can bus: {self.bus}")
                 self.state = (
                     BusState.ERROR_ACTIVE
                 )  # or set to a 'normal' state if you prefer
             except Exception as e:
                 print("Error initializing python-can bus:", e)
-                self._bus = None
+                self.bus = None
         else:
-            self._bus = None
+            self.bus = None
             print("python-can package not found; using mock CAN bus")
 
     def send(self, msg):
-        if self._bus:
+        if self.bus:
             can_msg = pycan.Message(
                 arbitration_id=msg.id, data=msg.data, is_extended_id=False
             )
             try:
-                self._bus.send(can_msg)
-                print(f"Sent CAN message: id={msg.id}, data={msg.data}")
+                self.bus.send(can_msg)
             except Exception as e:
                 print("Error sending message:", e)
         else:
@@ -60,7 +59,7 @@ class CAN:
 
     def listen(self, timeout=0):
         # Return a dummy listener wrapping python-can's receive functionality.
-        return DummyListener(self._bus, timeout)
+        return DummyListener(self.bus, timeout)
 
 
 # A simple listener that provides in_waiting() and receive() methods.
