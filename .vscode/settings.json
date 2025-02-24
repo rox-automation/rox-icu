@@ -25,4 +25,7 @@
     }
   },
   "python.defaultInterpreterPath": "/usr/local/bin/python",
+  "python.analysis.extraPaths": [
+    "./embedded/lib"
+  ]
 }
