@@ -98,5 +98,17 @@ def output(node_id: int, hex_input: str) -> None:
         bus.send(msg)
 
 
+@cli.command()
+@click.argument("node_id", type=int)
+def clear_errors(node_id: int) -> None:
+    """Clear errors on a specific ICU device"""
+    with get_can_bus() as bus:
+        arb_id, data = canp.encode_message(
+            canp.CommandMessage(canp.Commands.CLEAR_ERRORS), node_id
+        )
+        msg = can.Message(arbitration_id=arb_id, data=data, is_extended_id=False)
+        bus.send(msg)
+
+
 if __name__ == "__main__":
     cli()  # pragma: no cover

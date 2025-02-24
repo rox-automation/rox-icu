@@ -24,13 +24,14 @@ import struct
 import time
 from micropython import const
 import can_protocol as canp
+from can_protocol import ErrorBits, Commands
 import canio
 from bit_ops import clear_bit, set_bit
 from digitalio import Direction
 from icu_board import D_PINS, can, led1, led2, max_enable
 
 VERSION = "2.2.0"
-CAN_PROTOCOL_VERSION = 23
+CAN_PROTOCOL_VERSION = canp.VERSION
 
 #  PC params
 if sys.implementation.name == "cpython":
@@ -43,11 +44,6 @@ else:
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
-
-
-class ErrorBits:
-    LONG_LOOP_TIME = 0
-    CAN_ERROR = 1
 
 
 device_errors = 0
@@ -196,8 +192,19 @@ async def receive_can_message() -> None:
                     if isinstance(decoded_msg, canp.SetIoStateMessage):
                         set_io_state(decoded_msg.io_state)
                         print(f"IO state set to: {decoded_msg.io_state}")
+                    elif isinstance(decoded_msg, canp.CommandMessage):
+                        process_command(decoded_msg.command)
 
         await asyncio.sleep(0.001)  # Yield to other tasks
+
+
+def process_command(command: int) -> None:
+    """Process a command received over CAN bus."""
+    global device_errors  # pylint: disable=global-statement
+
+    if command == Commands.CLEAR_ERRORS:
+        device_errors = 0
+        print("Errors cleared")
 
 
 async def check_errors() -> None:
