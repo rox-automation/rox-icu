@@ -2,6 +2,13 @@
 
 ## unreleased
 
+## v2.4.0
+
+* add `CommandMessage` to protocol
+* bump protocol version to 24
+* add `clear-errors` command to cli
+
+
 ## v2.3.0
 
 * include firmware in library
