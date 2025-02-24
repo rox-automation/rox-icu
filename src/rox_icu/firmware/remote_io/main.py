@@ -38,7 +38,7 @@ if sys.implementation.name == "cpython":
     DISPLAY_INFO = False
 else:
     SAMPLE_DELAY = const(0)
-    DISPLAY_INFO = const(False)
+    DISPLAY_INFO = const(True)
 
 
 gc.enable()
