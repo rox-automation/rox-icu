@@ -43,7 +43,16 @@ except ImportError:  # pragma: no cover
     pass
 
 
-VERSION = 23
+VERSION = 24
+
+
+class ErrorBits:
+    LONG_LOOP_TIME = 0
+    CAN_ERROR = 1
+
+
+class Commands:
+    CLEAR_ERRORS = 1
 
 
 # -----------------Data Types-----------------
@@ -77,6 +86,7 @@ SetIoStateMessage = namedtuple("SetIoStateMessage", "io_state")
 SetParameterMessage = namedtuple("SetParameterMessage", ("param_id", "value"))
 GetParameterMessage = namedtuple("GetParameterMessage", ("param_id"))
 
+CommandMessage = namedtuple("CommandMessage", "command")
 
 # ----------------------------Internal lookup tables---------------------------
 
@@ -91,6 +101,7 @@ MSG_DEFS = {
             (SetIoStateMessage, "<B"),
             (SetParameterMessage, "<Bi"),
             (GetParameterMessage, "<B"),
+            (CommandMessage, "<B"),
         ]
     )
 }

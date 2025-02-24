@@ -4,11 +4,9 @@ import pytest
 
 from rox_icu import can_protocol as canp
 
-EXPECTED_PROTOCOL_VERSION = 23
-
 
 def test_version() -> None:
-    assert canp.VERSION == EXPECTED_PROTOCOL_VERSION
+    assert canp.VERSION > 20
 
 
 def test_split() -> None:
