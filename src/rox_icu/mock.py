@@ -207,7 +207,7 @@ class ICUMock:
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(self.send_mqtt_state(client))
                 tg.create_task(self.receive_mqtt_commands(client))
-                tg.create_task(self.send_heartbeat(client))
+                # tg.create_task(self.send_heartbeat(client))
 
     async def main(self):
         """Main async loop for the ICU mock."""
