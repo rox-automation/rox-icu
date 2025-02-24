@@ -186,8 +186,6 @@ async def receive_can_message() -> None:
     while True:
         if listener.in_waiting():
             msg = listener.receive()
-            if msg is not None:
-                print(f"Received message: {msg}")
             if msg and canp.get_node_id(msg.id) == NODE_ID:
                 if isinstance(msg, canio.RemoteTransmissionRequest):
                     print(f"RTR message {msg.id:x}")
