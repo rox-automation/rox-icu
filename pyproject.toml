@@ -72,7 +72,7 @@ omit = [
 
 #------------------pylint configuration----------------
 [tool.pylint.MASTER]
-init-hook = 'import sys; sys.path.insert(0, "./src/rox_icu/firmware/mocks")'
+init-hook = 'import sys; sys.path.insert(0, "./src/rox_icu/firmware/mocks"); sys.path.insert(0, "./embedded/lib");'
 
 [tool.pylint.messages_control]
 disable = [

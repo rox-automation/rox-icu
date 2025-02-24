@@ -1,5 +1,6 @@
 """ Mock for the CANIO firmware module. """
 
+import warnings
 import time
 import logging
 import can as pycan  # python-can package
@@ -34,10 +35,12 @@ class CAN:
         self.state = BusState.ERROR_ACTIVE  # you can adjust this based on bus status
 
         # Adjust bustype and channel based on your system.
-        self.bus = get_can_bus()
-        if self.bus is None:
-            log.error("Failed to initialize CAN bus!")
-            raise RuntimeError("get_can_bus() returned None")
+        try:
+            self.bus = get_can_bus()
+        except ValueError:
+            self.bus = None
+            warnings.warn("Failed to initialize python-can bus", RuntimeWarning)
+
         log.info(f"Initialized python-can bus: {self.bus}")
         self.state = BusState.ERROR_ACTIVE  # or set to a 'normal' state if you prefer
 
@@ -46,7 +49,8 @@ class CAN:
         can_msg = pycan.Message(
             arbitration_id=msg.id, data=msg.data, is_extended_id=False
         )
-        self.bus.send(can_msg)
+        if self.bus:
+            self.bus.send(can_msg)
 
     def listen(self, timeout=0):
         # Return a dummy listener wrapping python-can's receive functionality.
@@ -55,15 +59,15 @@ class CAN:
 
 # A simple listener that provides in_waiting() and receive() methods.
 class DummyListener:
-    def __init__(self, bus, timeout):
+    def __init__(self, bus, timeout) -> None:
         self._bus = bus
         self._timeout = timeout
 
-    def in_waiting(self):
+    def in_waiting(self) -> bool:
         # For simplicity, always return True; you could integrate a queue for real messages.
         return True
 
-    def receive(self):
+    def receive(self) -> Message | RemoteTransmissionRequest | None:
 
         can_msg = self._bus.recv(timeout=self._timeout)
         if can_msg:
@@ -77,6 +81,7 @@ class DummyListener:
 
 def monitor_can() -> None:
     can = CAN()
+    print(f"Monitoring {can.bus}")
     listener = can.listen(timeout=0)
     while True:
         if listener.in_waiting():

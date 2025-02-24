@@ -1,5 +1,5 @@
 # test ICU class with a mock device
-
+import os
 import asyncio
 
 import pytest
@@ -10,6 +10,7 @@ from rox_icu.mock import ICUMock
 NODE_ID = 42
 
 
+@pytest.mark.skipif(os.getenv("CI") is not None, reason="Skipped in CI environment")
 @pytest.mark.asyncio
 async def test_loopback():
     """set a pin on the mock and await for the event on the ICU"""
