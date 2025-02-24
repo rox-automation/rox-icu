@@ -37,20 +37,20 @@ Commands are published to the topic `/icu_mock/<node_id>/cmd` and must follow th
 
 Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 """
+# ruff: noqa: E402
+
+from rox_icu.firmware import mocks
+
+mocks.mock_hardware()
 
 import asyncio
-import logging
-
-import aiomqtt
-import can
 import orjson
-from can.interfaces.socketcan import SocketcanBus
-from can.interfaces.udp_multicast import UdpMulticastBus
+import logging
+import aiomqtt
 
-import rox_icu.can_protocol as canp
-from rox_icu.bit_ops import clear_bit, set_bit
-from rox_icu.can_utils import get_can_bus
+import rox_icu.firmware.remote_io.main as firmware
 from rox_icu.utils import run_main
+
 
 # Constants for CAN messages
 NODE_ID = 0x01
@@ -70,22 +70,18 @@ class ICUMock:
     def __init__(
         self,
         node_id: int = NODE_ID,
-        can_bus: SocketcanBus | UdpMulticastBus | None = None,
         simulate_inputs: bool = False,
         mqtt_broker: str | None = None,  # use mqtt interface if provided
     ):
         self._log = logging.getLogger(f"icu.mock.{node_id}")
-        self.node_id = node_id
 
-        self._io_state = 0  # Represents the state of all I/Os (8 bits for 8 I/Os)
+        firmware.NODE_ID = node_id
+        self.D_PINS = firmware.D_PINS
+
         self.error_max1 = 0
         self.error_max2 = 0
 
         self._simulate_inputs = simulate_inputs
-
-        self._bus = can_bus or get_can_bus()
-        self._can_reader = can.AsyncBufferedReader()
-        self._notifier = can.Notifier(self._bus, [self._can_reader])
 
         self._mqtt_broker = mqtt_broker
 
@@ -94,26 +90,24 @@ class ICUMock:
         )  # queue for state updates
 
     @property
+    def node_id(self) -> int:
+        """Get the node ID."""
+        return firmware.NODE_ID
+
+    @property
     def io_state(self):
         """Get the IO state."""
-        return self._io_state
+        return firmware.get_io_state()
 
     @io_state.setter
     def io_state(self, new_state: int) -> None:
         """Set the IO state."""
         self._log.info(f"Setting IO state: {new_state:02x}")
-        self._io_state = new_state
 
-        arb_id, data_bytes = canp.encode_message(
-            canp.IoStateMessage(self._io_state), self.node_id
-        )
+        # for bit, pin in enumerate(self.D_PINS):
+        #     pin.value = bool((new_state >> bit) & 0x01)
 
-        message = can.Message(
-            arbitration_id=arb_id,
-            data=data_bytes,
-            is_extended_id=False,
-        )
-        self._bus.send(message)
+        firmware.set_io_state(new_state)
 
         # Update the state queue
         if self._mqtt_broker is not None:
@@ -122,69 +116,15 @@ class ICUMock:
     def set_pin(self, pin: int, state: bool) -> None:
         """Set the state of a pin."""
         self._log.info(f"Setting pin {pin} to {state}")
-        if state:
-            self.io_state = set_bit(self._io_state, pin)
-        else:
-            self.io_state = clear_bit(self._io_state, pin)
+        self.D_PINS[pin].value = state
+
+    def get_pin(self, pin: int) -> bool:
+        """Get the state of a pin."""
+        return self.D_PINS[pin].value
 
     def get_global_error(self) -> tuple[int, int]:
         """Return the error status of max1 and max2."""
         return self.error_max1, self.error_max2
-
-    async def message_handler(self) -> None:
-        """Handle received CAN messages."""
-        self._log.info("Starting message handler")
-
-        while True:
-            try:
-                raw_msg = await self._can_reader.get_message()
-
-                node_id = canp.get_node_id(raw_msg.arbitration_id)
-
-                # Ignore messages that are not for this node ID
-                if node_id != self.node_id:
-                    continue
-
-                self._log.debug(
-                    f"Received message ID: {raw_msg.arbitration_id:x}, Data: {raw_msg.data.hex(' ')}"
-                )
-
-                msg = canp.decode_message(raw_msg.arbitration_id, raw_msg.data)
-
-                if isinstance(msg, canp.IoStateMessage):
-                    self._log.info(f"Received IOSetMessage: {msg.io_state:02x}")
-                    self.io_state = msg.io_state
-
-            except Exception as e:
-                self._log.error(f"Error in message handler: {e}")
-
-    async def heartbeat_loop(self, delay: float = 0.1) -> None:
-        """Send heartbeat message."""
-        self._log.info("Starting heartbeat loop")
-
-        counter = 0
-
-        while True:
-            # Construct the heartbeat message
-            heartbeat = canp.HeartbeatMessage(
-                device_type=DEVICE_TYPE,
-                io_dir=0,  # All outputs
-                io_state=self._io_state,
-                errors=0,
-                counter=counter,  # Increment counter for each loop
-            )
-
-            arb_id, data_bytes = canp.encode_message(heartbeat, self.node_id)
-
-            message = can.Message(
-                arbitration_id=arb_id,
-                data=data_bytes,
-                is_extended_id=False,
-            )
-            self._bus.send(message)
-            counter += 1
-            counter &= 0xFF  # Wrap around at 255
-            await asyncio.sleep(delay)
 
     async def toggle_outputs(self):
         """Toggle the output pins."""
@@ -198,7 +138,7 @@ class ICUMock:
             # toggle bit 7
             self.io_state ^= 0x80
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
 
     async def send_mqtt_state(self, client: aiomqtt.Client):
         """Send the current I/O state to the MQTT broker."""
@@ -210,6 +150,17 @@ class ICUMock:
             state = await self._state_queue.get()
             await client.publish(state_topic, state)
             self._state_queue.task_done()
+
+    async def send_heartbeat(self, client: aiomqtt.Client):
+        """Send a heartbeat message to the MQTT broker."""
+        heartbeat_topic = f"{self.MQTT_BASE_TOPIC}/{self.node_id}/heartbeat"
+
+        self._log.info(f"Publishing heartbeat to MQTT topic: {heartbeat_topic}")
+        counter = 0
+        while True:
+            await client.publish(heartbeat_topic, f"Heartbeat {counter}")
+            await asyncio.sleep(0.1)
+            counter += 1
 
     async def receive_mqtt_commands(self, client: aiomqtt.Client):
         """Receive and process MQTT commands."""
@@ -256,34 +207,33 @@ class ICUMock:
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(self.send_mqtt_state(client))
                 tg.create_task(self.receive_mqtt_commands(client))
+                # tg.create_task(self.send_heartbeat(client))
 
     async def main(self):
         """Main async loop for the ICU mock."""
 
         self._log.info(
-            f"Starting ICU mock id={self.node_id} on {self._bus.channel_info}"
+            f"Starting ICU mock id={self.node_id} on {firmware.can.bus.channel_info}"
         )
-        self._log.info(f"Protocol version: {canp.VERSION}")
 
         async with asyncio.TaskGroup() as tg:
-            tg.create_task(self.heartbeat_loop())
-            tg.create_task(self.message_handler())
-            tg.create_task(self.toggle_outputs())
             tg.create_task(self.mqtt_loop())
+            tg.create_task(firmware.main())
+            tg.create_task(self.toggle_outputs())
 
     def start(self):
         """Start the main loop."""
         asyncio.run(self.main())
 
-    def __del__(self):
-        """Destructor to clean up resources."""
-        self._notifier.stop()
-        self._bus.shutdown()
+    def __del__(self) -> None:
+        firmware.can.bus.shutdown()
 
 
-def main(node_id: int = NODE_ID):
+def main(node_id: int = NODE_ID, simulate_inputs: bool = False):
     try:
-        mock = ICUMock(node_id, simulate_inputs=True)
+        mock = ICUMock(
+            node_id, simulate_inputs=simulate_inputs, mqtt_broker="localhost"
+        )
         mock.start()
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt - shutting down ICU mock")

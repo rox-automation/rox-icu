@@ -2,22 +2,44 @@
 """
 Remote IO firmware for ICU board
 
-Copyright (c) 2024 ROX Automation - Jev Kuznetsov
+Copyright (c) 2024-2025 ROX Automation - Jev Kuznetsov
+
+
+
+Board configuration:
+---------------------
+
+use `settings.toml` on the device like this:
+
+    DEBUG=1
+    NODE_ID=10
+    INPUTS="0,7"
+
 """
-import os
+import sys
 import asyncio
+import gc
+import os
 import struct
 import time
-import gc
+from micropython import const
 import can_protocol as canp
-import canio  # pylint: disable=import-error
+import canio
+from bit_ops import clear_bit, set_bit
+from digitalio import Direction
 from icu_board import D_PINS, can, led1, led2, max_enable
-from digitalio import Direction  # pylint: disable=import-error
-from bit_ops import set_bit, clear_bit
 
+VERSION = "2.2.0"
+CAN_PROTOCOL_VERSION = 23
 
-VERSION = "1.6.0"
-CAN_PROTOCOL_VERSION = 12
+#  PC params
+if sys.implementation.name == "cpython":
+    SAMPLE_DELAY = 0.001
+    DISPLAY_INFO = False
+else:
+    SAMPLE_DELAY = const(0)
+    DISPLAY_INFO = const(False)
+
 
 gc.enable()
 # gc.disable()  # Disable automatic garbage collection
@@ -104,7 +126,7 @@ async def read_inputs() -> None:
         io_state = get_io_state()
 
         if io_state != prev_io_state:
-            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, 0, io_state))
+            msg = canio.Message(id=msg_id, data=struct.pack(byte_def, io_state))
             can.send(msg)
 
         prev_io_state = io_state
@@ -112,15 +134,14 @@ async def read_inputs() -> None:
         # Free memory
         # gc.collect()
 
-        # D_PINS[0].value = False
-
-        await asyncio.sleep(0)
+        await asyncio.sleep(SAMPLE_DELAY)
 
         max_cycle_time = max(max_cycle_time, cycle_time)
         total_cycle_time += cycle_time
         loop_count += 1
 
-        if loop_count % 1000 == 0:
+        if loop_count % 1000 == 0 and DISPLAY_INFO:
+            print(f"{loop_count=}")
             avg_cycle_time = total_cycle_time / 1000
             uptime_h = time.monotonic() / 3600
             print(
@@ -172,10 +193,9 @@ async def receive_can_message() -> None:
                     decoded_msg = canp.decode_message(msg.id, msg.data)
                     print(f"Received message: {decoded_msg}")
 
-                    if isinstance(decoded_msg, canp.IoStateMessage):
-                        if decoded_msg.op == 1:
-                            set_io_state(decoded_msg.io_state)
-                            print(f"IO state set to: {decoded_msg.io_state}")
+                    if isinstance(decoded_msg, canp.SetIoStateMessage):
+                        set_io_state(decoded_msg.io_state)
+                        print(f"IO state set to: {decoded_msg.io_state}")
 
         await asyncio.sleep(0.001)  # Yield to other tasks
 
@@ -211,4 +231,5 @@ async def main() -> None:
     )
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

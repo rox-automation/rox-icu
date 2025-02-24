@@ -2,6 +2,11 @@
 
 ## unreleased
 
+## v2.3.0
+
+* include firmware in library
+* use firmware code for mock
+
 
 ## v2.2.0
 

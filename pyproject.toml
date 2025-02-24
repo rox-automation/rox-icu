@@ -66,10 +66,14 @@ log_cli_date_format = "%H:%M:%S"
 [tool.coverage.run]
 omit = [
     "tests/*",
-    "src/rox_icu/cli.py"
+    "src/rox_icu/cli.py",
+    "src/rox_icu/firmware/mocks/*",
 ]
 
 #------------------pylint configuration----------------
+[tool.pylint.MASTER]
+init-hook = 'import sys; sys.path.insert(0, "./src/rox_icu/firmware/mocks")'
+
 [tool.pylint.messages_control]
 disable = [
     "missing-module-docstring",
