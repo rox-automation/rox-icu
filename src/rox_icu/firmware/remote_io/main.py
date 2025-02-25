@@ -30,7 +30,7 @@ from bit_ops import clear_bit, set_bit
 from digitalio import Direction
 from icu_board import D_PINS, can, led1, led2, max_enable
 
-VERSION = "2.2.0"
+VERSION = "2.4.0"
 CAN_PROTOCOL_VERSION = canp.VERSION
 
 #  PC params
@@ -162,7 +162,7 @@ async def heartbeat_loop() -> None:
 
     while True:
         msg = canp.HeartbeatMessage(
-            device_type=12,
+            device_type=CAN_PROTOCOL_VERSION,
             io_dir=IO_DIRS,
             io_state=get_io_state(),
             errors=device_errors,
