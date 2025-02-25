@@ -28,7 +28,7 @@ from can_protocol import ErrorBits, Commands
 import canio
 from bit_ops import clear_bit, set_bit
 from digitalio import Direction
-from icu_board import D_PINS, can, led1, led2, max_enable
+from icu_board import D_PINS, can, led1, led2, max_enable, rgb_led
 
 VERSION = "2.4.0"
 CAN_PROTOCOL_VERSION = canp.VERSION
@@ -136,9 +136,9 @@ async def read_inputs() -> None:
         total_cycle_time += cycle_time
         loop_count += 1
 
-        if loop_count % 1000 == 0 and DISPLAY_INFO:
+        if loop_count % 10000 == 0 and DISPLAY_INFO:
             print(f"{loop_count=}")
-            avg_cycle_time = total_cycle_time / 1000
+            avg_cycle_time = total_cycle_time / 10000
             uptime_h = time.monotonic() / 3600
             print(
                 f"timing: {avg_cycle_time:.2f}ms, Max: {max_cycle_time:.2f}ms (mem {gc.mem_alloc()} {gc.mem_free()}) Uptime: {uptime_h:.2f}h"
@@ -193,18 +193,27 @@ async def receive_can_message() -> None:
                         set_io_state(decoded_msg.io_state)
                         print(f"IO state set to: {decoded_msg.io_state}")
                     elif isinstance(decoded_msg, canp.CommandMessage):
-                        process_command(decoded_msg.command)
+                        await process_command(decoded_msg.command)
 
         await asyncio.sleep(0.001)  # Yield to other tasks
 
 
-def process_command(command: int) -> None:
+async def process_command(command: int) -> None:
     """Process a command received over CAN bus."""
     global device_errors  # pylint: disable=global-statement
 
     if command == Commands.CLEAR_ERRORS:
         device_errors = 0
         print("Errors cleared")
+
+    elif command == Commands.FLASH_RGB:
+        for color in ((255, 0, 0), (0, 255, 0), (0, 0, 255)):
+            rgb_led.fill(color)
+            await asyncio.sleep(0.5)
+        rgb_led.fill((0, 255, 0))
+
+    else:
+        print(f"Unknown command: {command}")
 
 
 async def check_errors() -> None:
@@ -229,6 +238,8 @@ async def check_errors() -> None:
 
 
 async def main() -> None:
+
+    rgb_led.brightness = 0.2
 
     await asyncio.gather(
         read_inputs(),

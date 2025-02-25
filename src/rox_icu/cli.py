@@ -100,12 +100,25 @@ def output(node_id: int, hex_input: str) -> None:
 
 @cli.command()
 @click.argument("node_id", type=int)
-def clear_errors(node_id: int) -> None:
+@click.option("--channel", "-c", default="env")
+def clear_errors(node_id: int, channel: str) -> None:
     """Clear errors on a specific ICU device"""
-    with get_can_bus() as bus:
+    with get_can_bus(channel) as bus:
         arb_id, data = canp.encode_message(
             canp.CommandMessage(canp.Commands.CLEAR_ERRORS), node_id
         )
+        msg = can.Message(arbitration_id=arb_id, data=data, is_extended_id=False)
+        bus.send(msg)
+
+
+@cli.command()
+@click.argument("node_id", type=int)
+@click.argument("command", type=int)
+@click.option("--channel", "-c", default="env")
+def command(node_id: int, command: int, channel: str) -> None:
+    """send numeric command"""
+    with get_can_bus(channel) as bus:
+        arb_id, data = canp.encode_message(canp.CommandMessage(command), node_id)
         msg = can.Message(arbitration_id=arb_id, data=data, is_extended_id=False)
         bus.send(msg)
 

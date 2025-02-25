@@ -2,6 +2,13 @@
 
 ## unreleased
 
+## v2.5.0
+
+* bump protocol to 25
+* `device_type` in heartbeat now shows protocol version
+* add flash rgb led command
+* add `command` to cli
+
 ## v2.4.0
 
 * add `CommandMessage` to protocol

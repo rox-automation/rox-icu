@@ -43,7 +43,7 @@ except ImportError:  # pragma: no cover
     pass
 
 
-VERSION = 24
+VERSION = 25
 
 
 class ErrorBits:
@@ -53,6 +53,7 @@ class ErrorBits:
 
 class Commands:
     CLEAR_ERRORS = 1
+    FLASH_RGB = 101
 
 
 # -----------------Data Types-----------------
