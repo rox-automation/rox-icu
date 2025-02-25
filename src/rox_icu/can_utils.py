@@ -30,14 +30,19 @@ def get_can_bus(bus_type: str = "env") -> UdpMulticastBus | SocketcanBus:
         case "env":
 
             channel = os.getenv("CAN_CHANNEL")
+            interface = os.getenv("CAN_INTERFACE", "socketcan")
             if channel is None:
                 raise ValueError(
                     "Missing CAN_CHANNEL environment variable, set to can0 or similar"
                 )
-
-            return SocketcanBus(
-                channel=channel, interface="socketcan", receive_own_messages=False
-            )
+            if interface == "socketcan":
+                return SocketcanBus(
+                    channel=channel, interface="socketcan", receive_own_messages=False
+                )
+            elif interface == "udp_multicast":
+                return UdpMulticastBus(channel, interface="udp_multicast")
+            else:
+                raise ValueError(f"Unsupported CAN interface: {interface}")
 
         case _:  # just use the bus_type as the channel
 
