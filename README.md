@@ -1,34 +1,23 @@
-
 # ROX Integrated Control Unit (ICU)
-
-Software and documentation for ROX Integrated Control Unit
-
-## Description
 
 ![](assets/icu-board.webp)
 
 ROX Integrated Control Unit (ICU) is a modern, open-source alternative to conventional PLCs, designed for demanding industrial applications. Based on the Adafruit Feather M4 CAN platform, this compact device integrates an automotive-grade microcontroller, digital I/O, analog inputs, and CAN interface into a single, robust package.
 
-## Key Features:
+## Key Features
 
 - **Wide operation range** 10V to 40V Operating Supply Range, 65V Tolerant
 - **Industrial-Grade I/O:**
     - 8x configurable digital I/O channels (up to 40V and 1.2A per channel) with overcurrent protection and comprehensive diagnostics.
-    - Per-Channel Configurability Enables Wide Range of
-Applications
-        - Digital Output: High-Side (HS) Switch or Push-Pull
-        (PP) Driver
-        - Digital Input: Software Selectable Type 1 and 3, or
-        Type 2
+    - Per-Channel Configurability Enables Wide Range of Applications
+        - Digital Output: High-Side (HS) Switch or Push-Pull (PP) Driver
+        - Digital Input: Software Selectable Type 1 and 3, or Type 2
         - Current Limit Settable from 130mA to 1.2A
         - Independent Channel Powering
     - Fault Tolerant with Built-In Diagnostics
-        -  Voltage Supply Monitoring and Short-to-
-VDD Detection
+        - Voltage Supply Monitoring and Short-to-VDD Detection
         - Open-Wire/Open-Load Detection
-        - Thermal Shutdown Protection,
-        - Watchdog Timer etc.
-
+        - Thermal Shutdown Protection, Watchdog Timer etc.
     - 2x analog input, 0..10V range, including reference voltage generator.
 - **Connectivity:** Pass-through CAN connection for flexible integration.
 - **Powerful Processing:** Features a 120MHz Cortex M4 processor with floating-point support, 512KB Flash, and 192KB RAM.
@@ -39,105 +28,147 @@ VDD Detection
 
 The ROX ICU is designed for decentralized control in mobile machinery and as a PLC replacement in challenging environments. It combines the accessibility of the Feather ecosystem with industrial-grade capabilities, offering a versatile solution for modern industrial control applications.
 
+## Quick Start
 
-## Required tools
+**Requirements:** Python 3.11+ on Linux (Windows users should use WSL)
 
-* `mpremote`
-* `circup`
-* `invoke`
-
-
-## Repository structure
-
-### Embedded code
-
-* located in `embedded` folder.
-* use `invoke` (`tasks.py`) in that folder to manage device.
-
-
-### Remote IO firmware
-
-Main function of this package is to provide RemoteIO functionality on the embedded device and a driver interface on the PC.
-
-the firmware is located in `src/rox_icu/firmware`.
-The fun part about it is that it can be run as a mock on CPython with `icu mock`. This is very handy for testing and developing systems without actual hardware.
-
-
-
-### PC code
-
-This repository is a conventional python package that can be installed with pip.
-`pyproject.toml` is main project file
-
-
-
-
-## Getting started
-
-**note:** This guide is is for Linux systems. If you are using Windows, these instructions should be useable in WSL, no guarantees however.
-
-
-**note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
-
-
-## Development environment
-
-
-**Virtual environment**
+### 1. Development Environment Setup
 
 ```bash
+# Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate
+
+# Install package with development dependencies
 pip install -e .[dev]
 ```
 
-**OR VSCode devcontainer**
+### 2. Choose Your Development Path
 
-Open this repo in devcontainer.
+#### 🔧 Embedded Development
+For firmware development on the CircuitPython device:
+
+```bash
+cd embedded/
+invoke find-device      # Locate mounted device
+invoke init            # Install dependencies and hello world
+```
+
+📖 **[Complete Embedded Development Guide →](embedded/README.md)**
+
+#### 💻 PC Software Development
+For Python driver development and testing:
+
+1. **Setup Virtual CAN** (Linux)
+   ```bash
+   sudo modprobe vcan
+   sudo ip link add dev vcan0 type vcan
+   sudo ip link set up vcan0
+   ```
+
+2. **Test with Mock**
+   ```bash
+   # Run mock device
+   icu mock --node-id 1 --channel vcan0
+
+   # Monitor in another terminal
+   icu monitor
+   ```
 
 
+## PC Software Development
 
-## Working with device
+### Installation & Setup
 
-Most desktop distributions automatically mount the device under `/media/<user>/CIRCUITPY`.
+```bash
+# Virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
 
-if not automatically mounted, use `./mount_device.sh` script.
+# Verify installation
+icu --version
+```
 
+### CLI Commands
 
-### Clean filesystem
+The `icu` command provides comprehensive device management and testing:
 
-to completely erase the device run
+| Command | Description | Example |
+|---------|-------------|---------|
+| `icu monitor` | Monitor all CAN bus traffic | `icu monitor` |
+| `icu mock` | Run mock device for testing | `icu mock --node-id 1 --channel vcan0` |
+| `icu output` | Set device output state | `icu output --help` |
+| `icu inspect` | Inspect specific device messages | `icu inspect --help` |
+| `icu clear-errors` | Clear device error states | `icu clear-errors --help` |
+| `icu command` | Send raw numeric commands | `icu command --help` |
+| `icu info` | Show package information | `icu info` |
 
-    import storage; storage.erase_filesystem()
+### Mock Testing Framework
 
-see also [Troubleshooting](https://docs.circuitpython.org/en/latest/docs/troubleshooting.html)
+The mock framework allows running embedded firmware on PC for development and testing:
 
+1. **Setup virtual CAN:**
+   ```bash
+   # Linux setup
+   sudo modprobe vcan
+   sudo ip link add dev vcan0 type vcan
+   sudo ip link set up vcan0
+   ```
 
-### Installation
+2. **Run mock device:**
+   ```bash
+   icu mock --node-id 1 --channel vcan0
+   ```
 
-1. install circuitpython on the board
-    - put board in bootloader mode (double click reset button). It should register itself as a removable drive.
-    - put `.uf2` file on the drive, it should reboot into circuitpython.
-2. cd to `embedded` folder.
-3. use `invoke -l` to show available management commands
+3. **Monitor traffic:**
+   ```bash
+   # In another terminal
+   icu monitor
 
+   # Or use candump for raw CAN
+   candump vcan0
+   ```
 
-### Runnig code
+4. **Interact with mock:**
+   ```bash
+   # Set outputs
+   icu output --node-id 1 --value 0xFF
 
-First determine device serial port with `sudo dmesg | grep tty`
+   # Monitor specific device
+   icu inspect --node-id 1
+   ```
 
-There use `ampy` or `mpremote`:
+### Development Workflow
 
-*  `ampy run <script.py>` (set `AMPY_PORT` env variable first)
-*  `mpremote <port> run <script.py>` (use shortcuts for <port>, like `a1` for `/dev/ttyACM1` if required)
+1. **Write tests first** (following TDD approach)
+2. **Use mocks for hardware-less development**
+3. **Test with real hardware when available**
+4. **Run code quality checks:**
+   ```bash
+   ruff check --fix
+   ruff format
+   mypy src
+   pylint -E src tests
+   ```
 
-### Development docker stack
+5. **Run test suite:**
+   ```bash
+   pytest --cov=src --cov-report term-missing tests
+   ```
 
-start dev stack with `docker-compose.yml`
+### Examples
 
-### Pin mapping
+PC-side examples in `examples/`:
+- `cycle_outputs.py` - Cycle through output states
+- `rio_wait_and_toggle.py` - Remote I/O demonstration
 
-output of `dev/show_pins.py`
+Advanced examples in `src/rox_icu/examples/`:
+- `wait_and_toggle.py` - Async I/O patterns
+
+## Hardware Reference
+
+### Pin Mapping
 
 ```
 board.A0 board.D14 (PA02)
@@ -171,8 +202,52 @@ board.SDA (PA12)
 ```
 
 
+## Contributing & Development
+
+### Docker Development Stack
+
+For full development environment with MQTT and monitoring:
+```bash
+docker-compose up -d
+```
+
+### Code Quality
+
+Before committing changes:
+```bash
+# Python code quality (required)
+ruff check --fix
+ruff format
+mypy src
+pylint -E src tests
+
+# Run tests
+pytest --cov=src --cov-report term-missing tests
+
+# Or use invoke shortcuts
+invoke lint
+invoke test
+invoke ci  # Run CI locally in Docker
+```
+
+### Repository Structure
+
+```
+├── embedded/           # CircuitPython firmware
+│   ├── lib/           # Shared libraries (symlinked to src/)
+│   ├── examples/      # Example programs
+│   ├── remote_io/     # Main Remote I/O firmware
+│   └── tasks.py       # Device management commands
+├── src/rox_icu/       # Python package
+│   ├── firmware/      # Shared firmware code
+│   ├── mocks/         # Hardware abstraction for PC testing
+│   └── cli.py         # Command-line interface
+├── tests/             # Test suite
+├── examples/          # PC-side examples
+└── pcb/              # Hardware design files
+```
 
 ## Licenses
 
-* The sourcecode is released under the [MIT License](LICENSE)
-* Hardware design in `pcb` folder is released under [CC BY-SA 3.0](pcb/license.txt) license.
+- **Software**: [MIT License](LICENSE)
+- **Hardware**: [CC BY-SA 3.0](pcb/license.txt)
