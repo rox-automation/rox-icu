@@ -28,7 +28,7 @@ requires-python = ">=3.11"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
-optional-dependencies = {dev = { file = [".devcontainer/requirements-dev.txt"] }}
+optional-dependencies = {dev = { file = [".devcontainer/requirements.txt"] }}
 
 [tool.setuptools.package-data]
 rox_icu = ["dbc/*.dbc"]
