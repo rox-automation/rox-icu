@@ -80,6 +80,21 @@ This repository is a conventional python package that can be installed with pip.
 **note:** using removable drive from docker container is tricky. So `circup` and `invoke` tools are used on the host system.
 
 
+## Development environment
+
+
+**Virtual environment**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```
+
+**OR VSCode devcontainer**
+
+Open this repo in devcontainer.
+
 
 
 ## Working with device
