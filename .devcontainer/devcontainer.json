@@ -1,5 +1,5 @@
 {
-  "initializeCommand": "mkdir -p .devcontainer/extensions", // executed on HOST system
+  "initializeCommand": "mkdir -p ~/.vscode/container-extensions", // executed on HOST system
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
