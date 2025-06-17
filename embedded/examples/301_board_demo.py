@@ -1,5 +1,34 @@
 #!/usr/bin/env python3
-"""ECU board demo with button, sensor, LED, relay and CAN control"""
+"""
+ROX ICU Board Comprehensive Demo
+
+This demo showcases all major features of the ROX ICU board:
+- Digital I/O control using MAX14906 drivers
+- Analog input processing with RGB LED visualization
+- CAN bus messaging with statistics transmission
+- Async task coordination for real-time operation
+
+Hardware Connections Required:
+- Board Pin 5 (D_PINS[0]): Inductive proximity sensor (12-24V PNP/NPN)
+- Board Pin 1 (D_PINS[4]): LED indicator for sensor state
+- Board Pin 2 (D_PINS[5]): Output LED (flashes when button pressed)
+- Board Pin 3 (D_PINS[6]): Relay control output (24V capable)
+- Board Pin 4 (D_PINS[7]): Push button (normally open, pulls to ground)
+- A0: Analog input 1 (0-10V) - controls RGB LED red channel
+- A1: Analog input 2 (0-10V) - controls RGB LED blue channel
+- CAN H/L: Connect to CAN bus network for message transmission
+
+Demo Functions:
+- Flashes onboard LEDs at 5Hz rate
+- Monitors button presses and sensor triggers
+- Converts analog inputs to RGB LED colors
+- Toggles output pin 10 times when button pressed
+- Activates relay for 1 second after button press
+- Transmits CAN messages with counter and statistics
+- Uses scope pin for timing analysis
+
+Power: 12-24VDC via terminal block
+"""
 import asyncio
 import gc
 import struct
