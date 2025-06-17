@@ -52,5 +52,11 @@ def init(ctx):
     """initialize the board, use blink as the main code"""
     mount_point = get_mount_point()
 
+    # Remove code.py if it exists
+    code_py_path = os.path.join(mount_point, "code.py")
+    if os.path.exists(code_py_path):
+        os.remove(code_py_path)
+        print(f"Removed {code_py_path}")
+
     # Copy the main code
     ctx.run(f"cp examples/hello_feather.py {mount_point}/main.py")
