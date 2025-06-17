@@ -113,11 +113,6 @@ invoke find-device
 ../mount_device.sh
 ```
 
-### Clean filesystem (nuclear option)
-Connect to device REPL and run:
-```python
-import storage; storage.erase_filesystem()
-```
 
 ### REPL access
 ```bash
@@ -140,8 +135,14 @@ mpremote /dev/ttyACM0 repl
 
 3. **CircuitPython not responding:**
    - Press reset button
-   - Check for syntax errors in main.py
+   - Check for syntax errors in `main.py`
+   - Check if `code.py` is present next to `main.py`
    - Use REPL to debug interactively
+
+4. **Filesystem corruption**
+   - Connect to device REPL and run:
+   - `import storage; storage.erase_filesystem()`
+
 
 ## File Structure
 
