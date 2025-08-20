@@ -7,11 +7,15 @@ Copyright (c) 2024 ROX Automation - Jev Kuznetsov
 
 import asyncio
 import math
+import struct
+import canio
 
 import analogio  # pylint: disable=import-error
-from icu_board import D_PINS, Pins, led1, led2, max_enable, rgb_led
+from icu_board import D_PINS, Pins, led1, led2, max_enable, rgb_led, can
 
 max_enable.value = True  # enable the MAX14906 chips
+
+VERSION = "0.2"
 
 
 def pct_to_bar(pct: float) -> list:
@@ -32,6 +36,10 @@ async def flash_led(led, interval=0.5):
     while True:
         led.value = not led.value
         await asyncio.sleep(interval)
+
+def send_analog_data(adc_val:int)-> None:
+    """Send analog data over CAN bus"""
+    can.send(canio.Message(id=0x123, data=struct.pack("<H", adc_val)))
 
 
 async def glow_neopixel(period=5.0):
@@ -73,6 +81,9 @@ async def handle_analog() -> None:
 
     while True:
         adc_val = AIN1.value
+
+        send_analog_data(adc_val)  # Send the analog value over CAN
+
         adc_max_val = VREF.value
         pct = max(0, min(100, ((adc_val - c_offset) / (adc_max_val - c_offset)) * 100))
 
@@ -91,6 +102,7 @@ async def handle_analog() -> None:
 
 async def main():
     """main coro"""
+    print(f"Running version: {VERSION}")
     await asyncio.gather(
         flash_led(led1),  # flash led1 with default frequency
         handle_analog(),  # read analog inputs and set neopixel colors
